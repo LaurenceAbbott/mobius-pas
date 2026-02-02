@@ -1,1 +1,12 @@
+<div class="placeholder" style="
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  border: 2px dashed #ccc;
+  color: #666;
+  font-family: Arial, sans-serif;
+">
+  <p>Mobius PAS</p>
+</div>
 
