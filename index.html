@@ -42,26 +42,9 @@
       <aside class="left-panel">
         <p class="panel-title">Left panel</p>
         <p class="panel-subtitle">Work queue / navigation</p>
-        <div class="left-panel__controls">
-          <button class="toggle-button is-active" type="button" data-actions-type="client" aria-pressed="true" aria-controls="client-actions">Client actions</button>
-          <button class="toggle-button" type="button" data-actions-type="policy" aria-pressed="false" aria-controls="policy-actions">Policy actions</button>
-        </div>
         <div class="left-panel__clients">
           <p class="left-panel__section-title">Clients</p>
-          <div class="client-list" role="list">
-            <button class="client-list__button is-active" type="button" data-client-key="clientA" aria-pressed="true">
-              <span class="client-list__name">Miss Katerina Danilovska</span>
-              <span class="client-list__meta">CLI-001 • k.danilovska@gmail.com</span>
-            </button>
-            <button class="client-list__button" type="button" data-client-key="clientB" aria-pressed="false">
-              <span class="client-list__name">Mr Daniel Richardson</span>
-              <span class="client-list__meta">CLI-002 • daniel.richardson@outlook.com</span>
-            </button>
-            <button class="client-list__button" type="button" data-client-key="clientC" aria-pressed="false">
-              <span class="client-list__name">Mrs Helen Whitmore</span>
-              <span class="client-list__meta">CLI-003 • helen.whitmore@gmail.com</span>
-            </button>
-          </div>
+          <div class="client-accordion" id="clientAccordion"></div>
         </div>
       </aside>
 
