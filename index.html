@@ -40,6 +40,10 @@
       <aside class="left-panel">
         <p class="panel-title">Left panel</p>
         <p class="panel-subtitle">Work queue / navigation</p>
+        <div class="left-panel__controls">
+          <button class="toggle-button is-active" type="button" data-actions-type="product">Product list</button>
+          <button class="toggle-button" type="button" data-actions-type="cover">Cover list</button>
+        </div>
       </aside>
 
       <!-- Right Panel Component -->
@@ -49,6 +53,11 @@
         </div>
         <div class="right-panel__body">
           <div class="panel-card panel-card--actions">
+            <div class="actions-panel">
+              <p class="panel-title">Actions</p>
+              <p class="panel-subtitle">Select a list from the left panel</p>
+              <ul class="actions-list" id="actionsList"></ul>
+            </div>
             <p class="panel-title">Actions</p>
           </div>
           <div class="panel-card panel-card--work">
@@ -64,5 +73,6 @@
       <span>© Open GI Limited 2026</span>
     </footer>
   </div>
+  <script src="./app.js"></script>
 </body>
 </html>
