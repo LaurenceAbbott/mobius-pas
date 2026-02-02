@@ -41,8 +41,8 @@
         <p class="panel-title">Left panel</p>
         <p class="panel-subtitle">Work queue / navigation</p>
         <div class="left-panel__controls">
-          <button class="toggle-button is-active" type="button" data-actions-type="client">Client actions</button>
-          <button class="toggle-button" type="button" data-actions-type="policy">Policy actions</button>
+          <button class="toggle-button is-active" type="button" data-actions-type="client" aria-pressed="true" aria-controls="client-actions">Client actions</button>
+          <button class="toggle-button" type="button" data-actions-type="policy" aria-pressed="false" aria-controls="policy-actions">Policy actions</button>
         </div>
       </aside>
 
@@ -54,7 +54,7 @@
         <div class="right-panel__body">
           <div class="panel-card panel-card--actions">
             <nav class="actions-panel" aria-label="Work area menu">
-              <div class="menu-section" data-actions-type="client">
+              <div class="menu-section" data-actions-type="client" id="client-actions" aria-hidden="false">
                 <p class="menu-title">Client</p>
                 <ul class="menu-list">
                   <li><button class="menu-link is-active" type="button" data-work-class="summary">Summary</button></li>
@@ -66,7 +66,7 @@
                   <li><button class="menu-link" type="button" data-work-class="client-checks">Client checks</button></li>
                 </ul>
               </div>
-              <div class="menu-section" data-actions-type="policy">
+              <div class="menu-section" data-actions-type="policy" id="policy-actions" aria-hidden="true" hidden>
                 <p class="menu-title">Policy</p>
                 <ul class="menu-list">
                   <li><button class="menu-link" type="button" data-work-class="risk">Risk</button></li>
