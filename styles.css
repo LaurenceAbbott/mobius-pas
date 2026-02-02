@@ -150,6 +150,139 @@ nav-link i {
   letter-spacing: 0.05em;
 }
 
+.client-accordion {
+  display: grid;
+  gap: 12px;
+}
+
+.client-accordion__item {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.client-accordion__item[open],
+.client-accordion__item.is-active {
+  border-color: var(--black);
+  box-shadow: 0 10px 20px rgba(15, 15, 15, 0.08);
+}
+
+.client-accordion__summary {
+  list-style: none;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.client-accordion__summary::-webkit-details-marker {
+  display: none;
+}
+
+.client-accordion__chevron {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.client-accordion__item[open] .client-accordion__chevron {
+  transform: rotate(90deg);
+}
+
+.client-accordion__summary-text {
+  display: grid;
+  gap: 4px;
+}
+
+.client-accordion__name {
+  font-weight: 500;
+  color: var(--dark-gray);
+}
+
+.client-accordion__meta {
+  font-size: 0.85rem;
+  color: var(--mid-gray);
+}
+
+.client-accordion__view {
+  border: none;
+  background: transparent;
+  color: #2b57ff;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.client-accordion__policies {
+  display: grid;
+  gap: 8px;
+  padding: 8px 12px 14px;
+  background: #fafbfc;
+  border-top: 1px solid var(--border);
+}
+
+.policy-option {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--white);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.policy-option:hover,
+.policy-option:focus-within {
+  border-color: var(--border);
+  background: var(--light-gray);
+}
+
+.policy-option__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #eff2f7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #2a5d2a;
+}
+
+.policy-option__info {
+  display: grid;
+  gap: 2px;
+}
+
+.policy-option__name {
+  font-weight: 500;
+  color: var(--dark-gray);
+}
+
+.policy-option__meta {
+  font-size: 0.8rem;
+  color: var(--mid-gray);
+}
+
+.policy-option__radio {
+  width: 18px;
+  height: 18px;
+  accent-color: #2b57ff;
+  cursor: pointer;
+}
+
 .client-list {
   display: grid;
   gap: 12px;
