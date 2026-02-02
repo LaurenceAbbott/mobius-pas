@@ -1,46 +1,21 @@
-const actionsList = document.querySelector("#actionsList");
-const toggleButtons = document.querySelectorAll(".toggle-button");
+const menuLinks = document.querySelectorAll(".menu-link");
+const workAreaContent = document.querySelector("#workAreaContent");
 
-const actionItems = {
-  product: [
-    "Property package",
-    "Commercial combined",
-    "Motor fleet",
-    "Professional indemnity",
-    "Cyber liability",
-  ],
-  cover: [
-    "Buildings and contents",
-    "Business interruption",
-    "Public liability",
-    "Employers liability",
-    "Directors and officers",
-  ],
+const updateWorkArea = (button) => {
+  if (!workAreaContent) return;
+  const { workClass } = button.dataset;
+  if (!workClass) return;
+  menuLinks.forEach((link) => {
+    link.classList.toggle("is-active", link === button);
+  });
+    workAreaContent.className = `work-area__content work-area__content--${workClass}`;
+  workAreaContent.textContent = `Viewing: ${button.textContent}`;
 };
 
-const renderActions = (type) => {
-  if (!actionsList) return;
-  actionsList.innerHTML = "";
-  actionItems[type].forEach((item) => {
-    const listItem = document.createElement("li");
-    listItem.textContent = item;
-    actionsList.appendChild(listItem);
-  });
-};
-
-const setActiveToggle = (button) => {
-  toggleButtons.forEach((toggle) => {
-    toggle.classList.toggle("is-active", toggle === button);
-  });
-};
-
-toggleButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const { actionsType } = button.dataset;
-    if (!actionsType || !actionItems[actionsType]) return;
-    setActiveToggle(button);
-    renderActions(actionsType);
-  });
+menuLinks.forEach((button) => {
+  button.addEventListener("click", () => updateWorkArea(button));
 });
 
-renderActions("product");
+if (menuLinks.length > 0) {
+  updateWorkArea(menuLinks[0]);
+}
