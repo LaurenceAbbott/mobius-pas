@@ -4,7 +4,7 @@ const menuLinks = document.querySelectorAll(".menu-link");
 const workAreaContent = document.querySelector("#workAreaContent");
 const actionSections = document.querySelectorAll(".menu-section");
 const toggleButtons = document.querySelectorAll(".toggle-button");
-const client = clients?.clientA;
+const clientButtons = document.querySelectorAll(".client-list__button");
 
 const formatAddress = (address) => {
   if (!address) return "";
@@ -44,6 +44,24 @@ const populateCustomerPanel = (activeClient) => {
     "[data-client-main-driver]",
     activeClient.personal?.isMainDriver ? "Is main driver" : "Not main driver"
   );
+};
+
+const setActiveClientButton = (activeButton) => {
+  if (!activeButton) return;
+  clientButtons.forEach((button) => {
+    const isActive = button === activeButton;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+};
+
+const setActiveClient = (clientKey, button) => {
+  const activeClient = clients?.[clientKey];
+  if (!activeClient) return;
+  populateCustomerPanel(activeClient);
+  if (button) {
+    setActiveClientButton(button);
+  }
 };
 
 const updateWorkArea = (button) => {
@@ -97,4 +115,12 @@ if (toggleButtons.length > 0) {
   updateWorkArea(menuLinks[0]);
 }
 
-populateCustomerPanel(client);
+clientButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setActiveClient(button.dataset.clientKey, button);
+  });
+});
+
+const initialClientButton =
+  document.querySelector(".client-list__button.is-active") || clientButtons[0];
+setActiveClient(initialClientButton?.dataset.clientKey || "clientA", initialClientButton);
