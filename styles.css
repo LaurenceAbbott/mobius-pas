@@ -166,7 +166,7 @@ nav-link i {
 
 .client-accordion__item[open],
 .client-accordion__item.is-active {
-  border-color: var(--black);
+  border-color: var(--links);
   box-shadow: 0 10px 20px rgba(15, 15, 15, 0.08);
 }
 
