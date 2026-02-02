@@ -70,7 +70,7 @@ body {
   text-decoration: none;
   color: var(--mid-gray);
   font-size: 0.95rem;
-  font-weight: 350;
+  font-weight: 500;
   padding-bottom: 2px;
   border-bottom: 1px solid transparent;
 }
@@ -407,8 +407,8 @@ nav-link i {
   border-radius: 999px;
   padding: 6px 14px;
   color: var(--mid-gray);
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 350;
 }
 
 .right-panel__body {
