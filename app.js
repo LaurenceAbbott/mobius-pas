@@ -22,9 +22,15 @@ const setActionsView = (actionsType) => {
   if (!actionsType) return;
   toggleButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.actionsType === actionsType);
+    button.setAttribute(
+      "aria-pressed",
+      button.dataset.actionsType === actionsType ? "true" : "false"
+    );
   });
   actionSections.forEach((section) => {
-    section.hidden = section.dataset.actionsType !== actionsType;
+    const isActive = section.dataset.actionsType === actionsType;
+    section.hidden = !isActive;
+    section.setAttribute("aria-hidden", isActive ? "false" : "true");
   });
   const activeSection = document.querySelector(
     `.menu-section[data-actions-type="${actionsType}"]`
