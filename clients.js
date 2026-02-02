@@ -1,6 +1,6 @@
-export const customers = {
-  customerA: {
-    id: "CUST-001",
+export const clients = {
+  clientA: {
+    id: "CLI-001",
 
     name: "Miss Katerina Danilovska",
     email: "k.danilovska@gmail.com",
@@ -326,8 +326,8 @@ export const customers = {
 
   // --------------------------------------------------------------------
 
-  customerB: {
-    id: "CUST-002",
+  clientB: {
+    id: "CLI-002",
 
     name: "Mr Daniel Richardson",
     email: "daniel.richardson@outlook.com",
@@ -619,8 +619,8 @@ export const customers = {
 
   // --------------------------------------------------------------------
 
-  customerC: {
-    id: "CUST-003",
+  clientC: {
+    id: "CLI-003",
 
     name: "Mrs Helen Whitmore",
     email: "helen.whitmore@gmail.com",
