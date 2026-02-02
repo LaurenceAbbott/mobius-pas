@@ -122,6 +122,38 @@ body {
   min-height: 320px;
 }
 
+.left-panel__controls {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.toggle-button {
+  border: 1px solid var(--border);
+  background: var(--light-gray);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--dark-gray);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.toggle-button:hover,
+.toggle-button:focus-visible {
+  border-color: var(--accent);
+  background: #eceff4;
+  outline: none;
+}
+
+.toggle-button.is-active {
+  border-color: var(--accent);
+  background: #e8eefb;
+  color: var(--black);
+}
+
 /* Right Panel Component */
 .right-panel {
   display: flex;
@@ -152,6 +184,34 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.actions-panel {
+  width: 100%;
+  text-align: left;
+}
+
+.actions-panel .panel-title {
+  margin-bottom: 4px;
+}
+
+.actions-panel .panel-subtitle {
+  margin-bottom: 16px;
+}
+
+.actions-list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.actions-list li {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-weight: 400;
+  color: var(--dark-gray);
+  background: var(--light-gray);
 }
 
 .right-panel__header {
