@@ -136,6 +136,59 @@ nav-link i {
   margin-top: 20px;
 }
 
+.left-panel__clients {
+  margin-top: 28px;
+  display: grid;
+  gap: 12px;
+}
+
+.left-panel__section-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--mid-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.client-list {
+  display: grid;
+  gap: 12px;
+}
+
+.client-list__button {
+  border: 1px solid var(--border);
+  background: var(--white);
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.client-list__button:hover,
+.client-list__button:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 6px 16px rgba(15, 15, 15, 0.08);
+  outline: none;
+}
+
+.client-list__button.is-active {
+  border-color: var(--black);
+  background: var(--light-gray);
+}
+
+.client-list__name {
+  font-weight: 500;
+  color: var(--dark-gray);
+}
+
+.client-list__meta {
+  font-size: 0.85rem;
+  color: var(--mid-gray);
+}
+
 .toggle-button {
   border: 1px solid var(--border);
   background: var(--light-gray);
