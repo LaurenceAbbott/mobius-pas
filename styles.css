@@ -187,10 +187,11 @@ body {
 }
 
 .actions-panel {
-  width: 100%;
-  text-align: left;
-  display: grid;
-  gap: 24px;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    gap: 24px;
+    flex-direction: column;
 }
 
 .menu-section {
@@ -199,9 +200,10 @@ body {
 }
 
 .menu-title {
-  font-size: 1.05rem;
-  font-weight: 350;
-  color: var(--dark-gray);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--dark-gray);
+    margin-bottom: 8px;
 }
 
 .menu-list {
