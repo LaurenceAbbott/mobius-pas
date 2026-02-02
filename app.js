@@ -58,9 +58,7 @@ const setActiveClientItem = (clientKey) => {
   document.querySelectorAll(".client-accordion__item").forEach((item) => {
     const isActive = item.dataset.clientKey === clientKey;
     item.classList.toggle("is-active", isActive);
-    if (isActive) {
-      item.open = true;
-    }
+   item.open = isActive;
   });
 };
 
