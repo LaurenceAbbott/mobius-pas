@@ -1,7 +1,50 @@
+import { clients } from "./clients.js";
+
 const menuLinks = document.querySelectorAll(".menu-link");
 const workAreaContent = document.querySelector("#workAreaContent");
 const actionSections = document.querySelectorAll(".menu-section");
 const toggleButtons = document.querySelectorAll(".toggle-button");
+const client = clients?.clientA;
+
+const formatAddress = (address) => {
+  if (!address) return "";
+  const parts = [address.line1, address.line2, address.city, address.country].filter(Boolean);
+  const strongPostcode = address.postcode
+    ? `<strong>${address.postcode}</strong>`
+    : "";
+  return `${parts.join(", ")}${parts.length ? " " : ""}${strongPostcode}`.trim();
+};
+
+const setTextContent = (selector, value) => {
+  const element = document.querySelector(selector);
+  if (!element || value == null) return;
+  element.textContent = value;
+};
+
+const setHtmlContent = (selector, value) => {
+  const element = document.querySelector(selector);
+  if (!element || value == null) return;
+  element.innerHTML = value;
+};
+
+const populateCustomerPanel = (activeClient) => {
+  if (!activeClient) return;
+  setTextContent("[data-client-name]", activeClient.name);
+  setTextContent("[data-client-email]", activeClient.email);
+  setTextContent("[data-client-dob]", activeClient.personal?.dob);
+  setTextContent("[data-client-phone]", activeClient.personal?.phone);
+  setHtmlContent("[data-client-address]", formatAddress(activeClient.personal?.address));
+  setTextContent(
+    "[data-client-since]",
+    activeClient.personal?.clientSince
+      ? `Client since: ${activeClient.personal.clientSince}`
+      : ""
+  );
+  setTextContent(
+    "[data-client-main-driver]",
+    activeClient.personal?.isMainDriver ? "Is main driver" : "Not main driver"
+  );
+};
 
 const updateWorkArea = (button) => {
   if (!workAreaContent) return;
@@ -53,3 +96,5 @@ if (toggleButtons.length > 0) {
 } else if (menuLinks.length > 0) {
   updateWorkArea(menuLinks[0]);
 }
+
+populateCustomerPanel(client);
