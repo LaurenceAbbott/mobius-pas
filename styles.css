@@ -8,7 +8,6 @@
   --white: #ffffff;
   --border: #e2e4e8;
   --accent: #1f1f1f;
-  --links: #2b57ff;
   --avatar: #CE99FF;
 }
 
@@ -218,7 +217,7 @@ nav-link i {
 .client-accordion__view {
   border: none;
   background: transparent;
-  color: var(--links);
+  color: #2b57ff;
   font-weight: 500;
   font-size: 0.9rem;
   cursor: pointer;
@@ -255,11 +254,11 @@ nav-link i {
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  background: var(--light-gray);
+  background: #eff2f7;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--black);
+  color: #2a5d2a;
 }
 
 .policy-option__info {
@@ -280,7 +279,7 @@ nav-link i {
 .policy-option__radio {
   width: 18px;
   height: 18px;
-  accent-color: var(--links);
+  accent-color: #2b57ff;
   cursor: pointer;
 }
 
@@ -524,7 +523,7 @@ nav-link i {
 .customer-card__link {
   background: transparent;
   border: none;
-  color: var(--links);
+  color: var(--black);
   font-weight: 500;
   display: inline-flex;
   align-items: center;
@@ -533,22 +532,18 @@ nav-link i {
   font-size: 1rem;
 }
 
-.customer-card__link:hover,
-.customer-card__link:focus-visible {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 4px;
-}
-
-.customer-card__link--secondary {
-  border: 1px solid var(--links);
-  border-radius: 999px;
 .customer-card__call {
   background: var(--black);
   border: 1px solid var(--accent);
   color: var(--white);
   padding: 10px 18px;
-  text-decoration: none;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 .customer-card__details {
