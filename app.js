@@ -3,8 +3,7 @@ import { clients } from "./clients.js";
 const menuLinks = document.querySelectorAll(".menu-link");
 const workAreaContent = document.querySelector("#workAreaContent");
 const actionSections = document.querySelectorAll(".menu-section");
-const toggleButtons = document.querySelectorAll(".toggle-button");
-const clientButtons = document.querySelectorAll(".client-list__button");
+const clientAccordion = document.querySelector("#clientAccordion");
 
 const formatAddress = (address) => {
   if (!address) return "";
@@ -13,6 +12,14 @@ const formatAddress = (address) => {
     ? `<strong>${address.postcode}</strong>`
     : "";
   return `${parts.join(", ")}${parts.length ? " " : ""}${strongPostcode}`.trim();
+};
+
+const formatShortAddress = (address) => {
+  if (!address) return "";
+  return [address.line1, address.line2, address.city]
+    .filter(Boolean)
+    .join(", ")
+    .trim();
 };
 
 const setTextContent = (selector, value) => {
@@ -46,22 +53,22 @@ const populateCustomerPanel = (activeClient) => {
   );
 };
 
-const setActiveClientButton = (activeButton) => {
-  if (!activeButton) return;
-  clientButtons.forEach((button) => {
-    const isActive = button === activeButton;
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", isActive ? "true" : "false");
+const setActiveClientItem = (clientKey) => {
+  if (!clientKey) return;
+  document.querySelectorAll(".client-accordion__item").forEach((item) => {
+    const isActive = item.dataset.clientKey === clientKey;
+    item.classList.toggle("is-active", isActive);
+    if (isActive) {
+      item.open = true;
+    }
   });
 };
 
-const setActiveClient = (clientKey, button) => {
+const setActiveClient = (clientKey) => {
   const activeClient = clients?.[clientKey];
   if (!activeClient) return;
   populateCustomerPanel(activeClient);
-  if (button) {
-    setActiveClientButton(button);
-  }
+    setActiveClientItem(clientKey);
 };
 
 const updateWorkArea = (button) => {
@@ -81,13 +88,6 @@ menuLinks.forEach((button) => {
 
 const setActionsView = (actionsType) => {
   if (!actionsType) return;
-  toggleButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.actionsType === actionsType);
-    button.setAttribute(
-      "aria-pressed",
-      button.dataset.actionsType === actionsType ? "true" : "false"
-    );
-  });
   actionSections.forEach((section) => {
     const isActive = section.dataset.actionsType === actionsType;
     section.hidden = !isActive;
@@ -102,25 +102,105 @@ const setActionsView = (actionsType) => {
   }
 };
 
-toggleButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    setActionsView(button.dataset.actionsType);
-  });
-});
+const policyIconClasses = {
+  motor: "fa-sharp fa-light fa-car-side",
+  home: "fa-sharp fa-light fa-house",
+  travel: "fa-sharp fa-light fa-plane-up"
+};
 
-if (toggleButtons.length > 0) {
-  const activeToggle = document.querySelector(".toggle-button.is-active");
-  setActionsView(activeToggle?.dataset.actionsType || toggleButtons[0].dataset.actionsType);
-} else if (menuLinks.length > 0) {
-  updateWorkArea(menuLinks[0]);
+const renderClientAccordion = () => {
+  if (!clientAccordion) return;
+  clientAccordion.innerHTML = "";
+  Object.entries(clients).forEach(([clientKey, client]) => {
+    const details = document.createElement("details");
+    details.className = "client-accordion__item";
+    details.dataset.clientKey = clientKey;
+
+    const summary = document.createElement("summary");
+    summary.className = "client-accordion__summary";
+
+    const chevron = document.createElement("span");
+    chevron.className = "client-accordion__chevron";
+    chevron.innerHTML = '<i class="fa-sharp fa-light fa-chevron-right" aria-hidden="true"></i>';
+
+    const summaryText = document.createElement("div");
+    summaryText.className = "client-accordion__summary-text";
+    summaryText.innerHTML = `
+      <span class="client-accordion__name">${client.name}</span>
+      <span class="client-accordion__meta">${formatShortAddress(client.personal?.address)}</span>
+    `;
+
+    const viewButton = document.createElement("button");
+    viewButton.type = "button";
+    viewButton.className = "client-accordion__view";
+    viewButton.dataset.clientKey = clientKey;
+    viewButton.textContent = "View client";
+
+    summary.append(chevron, summaryText, viewButton);
+
+    const policies = document.createElement("div");
+    policies.className = "client-accordion__policies";
+    policies.setAttribute("role", "radiogroup");
+    policies.setAttribute("aria-label", `Policies for ${client.name}`);
+
+    client.policies?.forEach((policy) => {
+      const policyLabel = document.createElement("label");
+      policyLabel.className = "policy-option";
+
+      const icon = document.createElement("span");
+      icon.className = "policy-option__icon";
+      icon.innerHTML = `<i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>`;
+
+      const info = document.createElement("span");
+      info.className = "policy-option__info";
+      info.innerHTML = `
+        <span class="policy-option__name">${policy.ref}</span>
+        <span class="policy-option__meta">${policy.internalRef}</span>
+      `;
+
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "policy-selection";
+      radio.className = "policy-option__radio";
+      radio.dataset.clientKey = clientKey;
+      radio.dataset.policyId = policy.id;
+
+      policyLabel.append(icon, info, radio);
+      policies.appendChild(policyLabel);
+    });
+
+    details.append(summary, policies);
+    clientAccordion.appendChild(details);
+  });
+};
+
+if (clientAccordion) {
+  renderClientAccordion();
+
+  clientAccordion.addEventListener("click", (event) => {
+    const viewButton = event.target.closest(".client-accordion__view");
+    if (viewButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      const { clientKey } = viewButton.dataset;
+      setActiveClient(clientKey);
+      setActionsView("client");
+    }
+  });
+
+  clientAccordion.addEventListener("change", (event) => {
+    const radio = event.target.closest(".policy-option__radio");
+    if (!radio) return;
+    setActiveClient(radio.dataset.clientKey);
+    setActionsView("policy");
+  });
 }
 
-clientButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    setActiveClient(button.dataset.clientKey, button);
-  });
-});
+const initialClientKey = Object.keys(clients)[0];
+if (initialClientKey) {
+  setActiveClient(initialClientKey);
+}
 
-const initialClientButton =
-  document.querySelector(".client-list__button.is-active") || clientButtons[0];
-setActiveClient(initialClientButton?.dataset.clientKey || "clientA", initialClientButton);
+if (menuLinks.length > 0) {
+  setActionsView("client");
+}
