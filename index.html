@@ -53,15 +53,42 @@
         </div>
         <div class="right-panel__body">
           <div class="panel-card panel-card--actions">
-            <div class="actions-panel">
-              <p class="panel-title">Actions</p>
-              <p class="panel-subtitle">Select a list from the left panel</p>
-              <ul class="actions-list" id="actionsList"></ul>
-            </div>
-            <p class="panel-title">Actions</p>
+            <nav class="actions-panel" aria-label="Work area menu">
+              <div class="menu-section">
+                <p class="menu-title">Client</p>
+                <ul class="menu-list">
+                  <li><button class="menu-link is-active" type="button" data-work-class="summary">Summary</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="business-details">Business details</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="portal-access">Portal access</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="transactions">Transactions</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="activity">Activity</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="complaints">Complaints</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="client-checks">Client checks</button></li>
+                </ul>
+              </div>
+              <div class="menu-section">
+                <p class="menu-title">Policy</p>
+                <ul class="menu-list">
+                  <li><button class="menu-link" type="button" data-work-class="risk">Risk</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="notes">Notes</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="checklist">Checklist</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="attachments">Attachments</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="history">History</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="tasks">Tasks</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="policy-transactions">Transactions</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="documents">Documents</button></li>
+                  <li><button class="menu-link" type="button" data-work-class="claims">Claims</button></li>
+                </ul>
+              </div>
+            </nav>
           </div>
           <div class="panel-card panel-card--work">
             <p class="panel-title">Work area</p>
+             <div class="work-area" id="workArea">
+              <div class="work-area__content work-area__content--summary" id="workAreaContent">
+                Viewing: Summary
+              </div>
+            </div>
           </div>
         </div>
       </section>
