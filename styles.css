@@ -21,6 +21,7 @@ body {
   background: var(--light-gray);
   color: var(--dark-gray);
   min-height: 100vh;
+  font-weight: 300;
 }
 
 .app-shell {
@@ -65,9 +66,9 @@ body {
   text-decoration: none;
   color: var(--mid-gray);
   font-size: 0.95rem;
-  font-weight: 500;
-  padding-bottom: 8px;
-  border-bottom: 2px solid transparent;
+  font-weight: 350;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
 }
 
 .nav-link--active {
@@ -123,16 +124,15 @@ body {
 
 /* Right Panel Component */
 .right-panel {
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   min-height: 320px;
 }
 
 .panel-title {
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 350;
   margin-bottom: 8px;
   color: var(--black);
 }
@@ -140,6 +140,37 @@ body {
 .panel-subtitle {
   color: var(--mid-gray);
   font-size: 0.95rem;
+}
+
+.panel-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.right-panel__header {
+  min-height: 120px;
+}
+
+.right-panel__body {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) 1fr;
+  gap: 20px;
+  flex: 1;
+}
+
+.panel-card--actions {
+  min-height: 360px;
+}
+
+.panel-card--work {
+  min-height: 360px;
 }
 
 /* Footer Component */
