@@ -259,6 +259,8 @@ body {
     align-items: stretch;
   justify-content: flex-start;
   text-align: left;
+  display: flex;
+  flex-direction: column;
 }
 
 .work-area {
