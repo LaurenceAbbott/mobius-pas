@@ -5,14 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mobius PAS</title>
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
   <!-- Link to styles.css -->
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <div class="app-shell">
+    <!-- Header Component -->
+    <header class="app-header">
+      <div class="header-left">
+        <span class="logo">logo</span>
+        <nav class="header-nav">
+          <a class="nav-link" href="#">Dashboard</a>
+          <a class="nav-link nav-link--active" href="#">Quotes and policies</a>
+          <a class="nav-link" href="#">Renewals</a>
+          <a class="nav-link" href="#">Bordereau</a>
+          <a class="nav-link" href="#">Reports</a>
+          <a class="nav-link" href="#">Accounts</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <div class="avatar">RD</div>
+        <button class="account-button" type="button">My account</button>
+      </div>
+    </header>
 
-  <div class="placeholder">
-    <p>Mobius PAS</p>
+    <!-- Main Layout Component -->
+    <main class="app-main">
+      <!-- Left Panel Component -->
+      <aside class="left-panel">
+        <p class="panel-title">Left panel</p>
+        <p class="panel-subtitle">Work queue / navigation</p>
+      </aside>
+
+      <!-- Right Panel Component -->
+      <section class="right-panel">
+        <p class="panel-title">Right panel</p>
+        <p class="panel-subtitle">Record workspace</p>
+      </section>
+    </main>
+
+    <!-- Footer Component -->
+    <footer class="app-footer">
+      <span>Mobius PAS Prototype</span>
+      <span>© 2024</span>
+    </footer>
   </div>
-
 </body>
 </html>
