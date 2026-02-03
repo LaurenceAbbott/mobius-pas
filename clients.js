@@ -1,4 +1,4 @@
-export const clients = {
+const CLIENTS = {
   clientA: {
     id: "CLI-001",
 
@@ -922,3 +922,5 @@ export const clients = {
     ]
   }
 };
+
+window.CLIENTS = CLIENTS;
