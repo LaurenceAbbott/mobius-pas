@@ -679,7 +679,6 @@ span.search-result__name {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding-right: 56px;
 }
 
 .customer-card__identity {
