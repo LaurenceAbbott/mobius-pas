@@ -43,19 +43,11 @@
           <div class="tab-bar">
             <div class="tab-bar__scroll" id="tabBar" role="tablist" aria-label="Workspace tabs"></div>
           </div>
-        <div class="workspace__search">
-            <label class="search-label" for="clientSearch">Search clients</label>
-            <div class="search-input">
+        <div class="workspace__actions">
+            <button class="search-toggle" id="searchToggle" type="button" aria-label="Search clients">
               <i class="fa-sharp fa-light fa-magnifying-glass" aria-hidden="true"></i>
-              <input
-                id="clientSearch"
-                type="search"
-                placeholder="Search by name or email"
-                autocomplete="off"
-                aria-label="Search clients by name or email"
-              />
-            </div>
-          <div class="search-results" id="searchResults" role="listbox" aria-label="Client search results"></div>
+              </button>
+            <div class="search-overlay" id="searchOverlay" aria-hidden="true"></div>
           </div>
         </div>
 
