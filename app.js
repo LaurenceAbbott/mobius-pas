@@ -326,8 +326,8 @@ searchToggle?.classList.remove("is-hidden");
     <div class="empty-state__title">Start your work</div>
     <div class="empty-state__hint">Search for a client or open a recent tab</div>
     <div class="empty-state__search" data-search-container></div>
-    <div class="empty-state__search" data-search-container></div>
-  `; 
+    <div class="empty-state__recent" data-recent-list></div>
+  `;
        
   const searchContainer = emptyState.querySelector("[data-search-container]");
   initSearchInterface(searchContainer, { mode: "empty" });
