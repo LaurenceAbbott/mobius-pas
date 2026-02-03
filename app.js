@@ -2,8 +2,8 @@ import { clients } from "./clients.js";
 
 const tabBar = document.querySelector("#tabBar");
 const workspaceContent = document.querySelector("#workspaceContent");
-const clientSearch = document.querySelector("#clientSearch");
-const searchResults = document.querySelector("#searchResults");
+const searchToggle = document.querySelector("#searchToggle");
+const searchOverlay = document.querySelector("#searchOverlay");
 
 const TAB_STORAGE_KEY = "mobiusTabs";
 const ACTIVE_TAB_STORAGE_KEY = "mobiusActiveTab";
@@ -124,7 +124,8 @@ const buildTabModel = ({ type, customerId, policyId }) => {
     pinned: false,
     dataRef: { customerId },
     activeClientAction: "Summary",
-    lastSelectedPolicyId: null
+    activePolicyAction: "Risk",
+    selectedPolicyId: null
   };
 };
 
@@ -160,7 +161,8 @@ const restoreTabs = () => {
       return {
         ...tab,
         activeClientAction: tab.activeClientAction || "Summary",
-        lastSelectedPolicyId: tab.lastSelectedPolicyId || null
+        activePolicyAction: tab.activePolicyAction || "Risk",
+        selectedPolicyId: tab.selectedPolicyId || null
       };
     }
     if (tab.type === "policy") {
@@ -189,20 +191,7 @@ const setActiveTab = (tabId) => {
   renderActiveView();
 };
 
-const updateClientSelection = (customerId, policyId) => {
-  const clientTab = tabs.find(
-    (tab) => tab.type === "client" && tab.dataRef.customerId === customerId
-  );
-  if (clientTab) {
-    clientTab.lastSelectedPolicyId = policyId;
-  }
-};
-
 const openTab = ({ type, customerId, policyId }) => {
-    if (type === "policy") {
-    updateClientSelection(customerId, policyId);
-  }
-
   const existingTab = tabs.find(
     (tab) =>
       tab.type === type &&
@@ -253,18 +242,14 @@ const renderTabs = () => {
   tabBar.innerHTML = "";
 
   if (tabs.length === 0) {
-    const placeholder = document.createElement("div");
-    placeholder.className = "tab tab--active";
-    placeholder.innerHTML = `
-      <span class="tab__meta">
-        <span class="tab__title">Workspace</span>
-        <span class="tab__subtitle">No active tabs</span>
-      </span>
-    `;
-    tabBar.appendChild(placeholder);
+     searchToggle?.classList.add("is-hidden");
+    if (typeof closeSearchOverlay === "function") {
+      closeSearchOverlay();
+    }
     return;
   }
-
+searchToggle?.classList.remove("is-hidden");
+  
   tabs.forEach((tab) => {
     const tabElement = document.createElement("div");
     tabElement.className = "tab";
@@ -308,10 +293,20 @@ const renderTabs = () => {
       closeTab(tab.id);
     });
 
-    tabElement.addEventListener("click", () => setActiveTab(tab.id));
+    tabElement.addEventListener("click", () => {
+      if (tab.id === activeTabId && tab.type === "client") {
+        resetClientSelection(tab.id);
+        return;
+      }
+      setActiveTab(tab.id);
+    });
     tabElement.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
+        if (tab.id === activeTabId && tab.type === "client") {
+          resetClientSelection(tab.id);
+          return;
+        }
         setActiveTab(tab.id);
       }
     });
@@ -330,10 +325,14 @@ const renderTabs = () => {
   emptyState.innerHTML = `
     <div class="empty-state__title">Start your work</div>
     <div class="empty-state__hint">Search for a client or open a recent tab</div>
-    <div class="empty-state__recent" data-recent-list></div>
-  `;
-      
-       const recentList = emptyState.querySelector("[data-recent-list]");
+    <div class="empty-state__search" data-search-container></div>
+    <div class="empty-state__search" data-search-container></div>
+  `; 
+       
+  const searchContainer = emptyState.querySelector("[data-search-container]");
+  initSearchInterface(searchContainer, { mode: "empty" });
+
+  const recentList = emptyState.querySelector("[data-recent-list]");
   const recentItems = recentTabs.slice(0, 3);
 
   if (recentItems.length === 0) {
@@ -354,7 +353,7 @@ const renderTabs = () => {
         <span class="policy-pill">${item.type === "client" ? "Client" : "Policy"}</span>
       `;
 
-       button.addEventListener("click", () =>
+        button.addEventListener("click", () =>
         openTab({
           type: item.type,
           customerId: item.dataRef.customerId,
@@ -364,7 +363,7 @@ const renderTabs = () => {
 
        recentList.appendChild(button);
     });
-   }
+  }
 
   workspaceContent.appendChild(emptyState);
 };
@@ -385,7 +384,24 @@ const setClientAction = (tabId, action) => {
   renderActiveView();
 };
 
-const renderClientPanel = ({ client, selectedPolicyId }) => {
+const setClientPolicySelection = (tabId, policyId) => {
+  const tab = tabs.find((item) => item.id === tabId);
+  if (!tab) return;
+  tab.selectedPolicyId = policyId;
+  tab.activePolicyAction = "Risk";
+  persistTabs();
+  renderActiveView();
+};
+
+const resetClientSelection = (tabId) => {
+  const tab = tabs.find((item) => item.id === tabId);
+  if (!tab) return;
+  tab.selectedPolicyId = null;
+  persistTabs();
+  renderActiveView();
+};
+
+const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack client-panel";
   panel.innerHTML = `
@@ -456,11 +472,9 @@ const renderClientPanel = ({ client, selectedPolicyId }) => {
     `;
 
     button.addEventListener("click", () => {
-      openTab({
-        type: "policy",
-        customerId: client.id,
-        policyId: policy.id
-      });
+            if (onSelectPolicy) {
+        onSelectPolicy(policy.id);
+      }
     });
 
     list.appendChild(button);
@@ -469,19 +483,24 @@ const renderClientPanel = ({ client, selectedPolicyId }) => {
   return panel;
 };
 
-const renderActionPanel = ({ title, actions, activeAction, onSelect }) => {
+const renderActionPanel = ({ title, actions, activeAction, onSelect, backAction }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack action-panel";
   panel.innerHTML = `
     <div class="actions-panel">
       <div class="menu-section">
         <p class="menu-title">${title}</p>
+        ${backAction ? `<button class="menu-back" type="button">${backAction.label}</button>` : ""}
         <ul class="menu-list"></ul>
       </div>
     </div>
   `;
 
   const menuList = panel.querySelector(".menu-list");
+  const backButton = panel.querySelector(".menu-back");
+  if (backButton && backAction) {
+    backButton.addEventListener("click", backAction.onBack);
+  }
   actions.forEach((label) => {
     const listItem = document.createElement("li");
     const button = document.createElement("button");
@@ -502,13 +521,13 @@ const renderActionPanel = ({ title, actions, activeAction, onSelect }) => {
   return panel;
 };
 
-const renderWorkArea = ({ title, activeAction }) => {
+const renderWorkArea = ({ title, activeAction, contextLabel }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack work-panel";
   panel.innerHTML = `
     <p class="panel-title">${title}</p>
     <div class="work-area">
-      <div class="work-area__content">Viewing: ${activeAction}</div>
+      <div class="work-area__content">Viewing: ${activeAction}${contextLabel ? ` • ${contextLabel}` : ""}</div>
     </div>
   `;
   return panel;
@@ -517,6 +536,9 @@ const renderWorkArea = ({ title, activeAction }) => {
 const renderClientView = (tab) => {
   const client = getClientByCustomerId(tab.dataRef.customerId);
   if (!client) return;
+  const selectedPolicy = tab.selectedPolicyId
+    ? getPolicyById(client, tab.selectedPolicyId)
+    : null;
 
   const container = document.createElement("div");
   container.className = "workspace-grid";
@@ -524,26 +546,50 @@ const renderClientView = (tab) => {
   container.appendChild(
     renderClientPanel({
       client,
-      selectedPolicyId: tab.lastSelectedPolicyId
+      selectedPolicyId: tab.selectedPolicyId,
+      onSelectPolicy: (policyId) => setClientPolicySelection(tab.id, policyId)
     })
   );
 
-  container.appendChild(
-    renderActionPanel({
-      title: "Client actions",
-      actions: clientActions,
-      activeAction: tab.activeClientAction,
-      onSelect: (action) => setClientAction(tab.id, action)
-    })
-  );
+  if (selectedPolicy) {
+    container.appendChild(
+      renderActionPanel({
+        title: "Policy actions",
+        actions: policyActions,
+        activeAction: tab.activePolicyAction,
+        onSelect: (action) => setPolicyAction(tab.id, action),
+        backAction: {
+          label: "Back to client summary",
+          onBack: () => resetClientSelection(tab.id)
+        }
+      })
+    );
 
-  container.appendChild(
-    renderWorkArea({
-      title: "Work area",
-      activeAction: tab.activeClientAction
-    })
-  );
+    container.appendChild(
+      renderWorkArea({
+        title: "Work area",
+        activeAction: tab.activePolicyAction,
+        contextLabel: selectedPolicy.ref
+      })
+    );
+  } else {
+    container.appendChild(
+      renderActionPanel({
+        title: "Client actions",
+        actions: clientActions,
+        activeAction: tab.activeClientAction,
+        onSelect: (action) => setClientAction(tab.id, action)
+      })
+    );
 
+    container.appendChild(
+      renderWorkArea({
+        title: "Work area",
+        activeAction: tab.activeClientAction
+      })
+    );
+  }
+  
   workspaceContent.appendChild(container);
 };
 
@@ -600,72 +646,174 @@ const renderActiveView = () => {
   renderPolicyView(activeTab);
 };
 
-const renderSearchResults = (results) => {
-  if (!searchResults) return;
-  searchResults.innerHTML = "";
+let overlaySearchUI = null;
+let overlayIsOpen = false;
 
-  if (results.length === 0) {
-    searchResults.classList.remove("is-visible");
-    return;
-  }
-
-  results.forEach((client) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "search-result";
-    button.innerHTML = `
-      <span class="search-result__name">${client.name}</span>
-      <span class="search-result__meta">${client.email}</span>
-    `;
-    button.addEventListener("click", () => {
-      openTab({ type: "client", customerId: client.id });
-      clientSearch.value = "";
-      searchResults.classList.remove("is-visible");
-      searchResults.innerHTML = "";
-    });
-    searchResults.appendChild(button);
-  });
-
-searchResults.classList.add("is-visible");
-};
-
-const handleSearchInput = () => {
-  const query = clientSearch.value.trim().toLowerCase();
-  if (!query) {
-    searchResults.classList.remove("is-visible");
-    searchResults.innerHTML = "";
-    return;
-  }
-
-  const results = clientList.filter((client) =>
+  const getSearchMatches = (query) => {
+  if (!query) return [];
+  return clientList.filter((client) =>
     [client.name, client.email].some((field) =>
       field?.toLowerCase().includes(query)
     )
   );
+};
 
-  renderSearchResults(results);
+const renderSearchResults = (query, resultsContainer, onClose) => {
+  if (!resultsContainer) return [];
+  const matches = getSearchMatches(query);
+  resultsContainer.innerHTML = "";
+
+  if (matches.length === 0) {
+    return [];
+  }
+
+  matches.forEach((client) => {
+    const resultCard = document.createElement("div");
+    resultCard.className = "search-result";
+
+    const clientButton = document.createElement("button");
+    clientButton.type = "button";
+    clientButton.className = "search-result__client";
+    clientButton.innerHTML = `
+      <span class="search-result__header">
+        <span class="search-result__name">${client.name}</span>
+        <span class="search-result__meta">${client.email}</span>
+      </span>
+    `;
+    clientButton.addEventListener("click", () => {
+      openTab({ type: "client", customerId: client.id });
+      onClose?.();
+    });
+    
+    const branch = document.createElement("div");
+    branch.className = "policy-branch";
+    branch.innerHTML = `<div class="policy-branch__title">Policies</div>`;
+
+    client.policies?.forEach((policy) => {
+      const policyButton = document.createElement("button");
+      policyButton.type = "button";
+      policyButton.className = "policy-branch__item";
+      policyButton.innerHTML = `
+        <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
+        ${policy.ref}
+        <span>${policyTypeLabels[policy.type] || "Policy"}</span>
+      `;
+      policyButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openTab({
+          type: "policy",
+          customerId: client.id,
+          policyId: policy.id
+        });
+        onClose?.();
+      });
+      branch.appendChild(policyButton);
+    });
+
+    resultCard.append(clientButton, branch);
+    resultsContainer.appendChild(resultCard);
+  });
+
+return matches;
+};
+
+const initSearchInterface = (container, { mode, onClose } = {}) => {
+  if (!container) return null;
+  container.innerHTML = `
+    <div class="search-shell">
+      <div class="search-input">
+        <i class="fa-sharp fa-light fa-magnifying-glass" aria-hidden="true"></i>
+        <input
+          type="search"
+          placeholder="Search by name or email"
+          autocomplete="off"
+          aria-label="Search clients by name or email"
+        />
+      </div>
+      <div class="search-results" role="listbox" aria-label="Client search results"></div>
+    </div>
+  `;
+
+  const input = container.querySelector("input");
+  const results = container.querySelector(".search-results");
+  let latestMatches = [];
+
+  const handleInput = () => {
+    const query = input.value.trim().toLowerCase();
+    latestMatches = renderSearchResults(query, results, onClose);
+  };
+
+  input.addEventListener("input", handleInput);
+  input.addEventListener("focus", handleInput);
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && latestMatches[0]) {
+      event.preventDefault();
+      openTab({ type: "client", customerId: latestMatches[0].id });
+      onClose?.();
+    }
+    if (event.key === "Escape" && mode === "overlay") {
+      event.preventDefault();
+      onClose?.();
+    }
+  });
+
+  if (mode === "overlay") {
+    input.focus();
+  }
+
+  return { input, results };
+};
+
+  const openSearchOverlay = () => {
+  if (!searchOverlay) return;
+  overlayIsOpen = true;
+  searchOverlay.classList.add("is-open");
+  searchOverlay.setAttribute("aria-hidden", "false");
+  if (!overlaySearchUI) {
+    overlaySearchUI = initSearchInterface(searchOverlay, {
+      mode: "overlay",
+      onClose: closeSearchOverlay
+    });
+  } else {
+    overlaySearchUI.input?.focus();
+  }
+};
+
+const closeSearchOverlay = () => {
+  if (!searchOverlay) return;
+  overlayIsOpen = false;
+  searchOverlay.classList.remove("is-open");
+  searchOverlay.setAttribute("aria-hidden", "true");
+  if (overlaySearchUI?.input) {
+    overlaySearchUI.input.value = "";
+    overlaySearchUI.results.innerHTML = "";
+  }
 };
 
 const handleDocumentClick = (event) => {
-  if (!searchResults || !clientSearch) return;
-  if (
-    event.target === clientSearch ||
-    searchResults.contains(event.target) ||
-    clientSearch.contains(event.target)
-  ) {
+  if (!overlayIsOpen) return;
+  if (searchOverlay?.contains(event.target) || searchToggle?.contains(event.target)) {
     return;
   }
-  searchResults.classList.remove("is-visible");
+  closeSearchOverlay();
+};
+
+const handleDocumentKeydown = (event) => {
+  if (event.key === "Escape" && overlayIsOpen) {
+    closeSearchOverlay();
+  }
 };
 
 restoreTabs();
 renderTabs();
 renderActiveView();
 
-clientSearch?.addEventListener("input", handleSearchInput);
-clientSearch?.addEventListener("focus", handleSearchInput);
+searchToggle?.addEventListener("click", () => {
+  if (overlayIsOpen) {
+    closeSearchOverlay();
+  } else {
+    openSearchOverlay();
+  }
+});
 document.addEventListener("click", handleDocumentClick);
-
-if (tabs.length === 0) {
-  renderEmptyState();
-}
+document.addEventListener("keydown", handleDocumentKeydown);
