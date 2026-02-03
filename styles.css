@@ -573,6 +573,10 @@ span.search-result__name {
   gap: 16px;
 }
 
+.client-panel {
+  position: relative;
+}
+
 .actions-panel {
      width: 100%;
   text-align: left;
@@ -675,6 +679,7 @@ span.search-result__name {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  padding-right: 56px;
 }
 
 .customer-card__identity {
@@ -728,7 +733,9 @@ span.search-result__name {
 }
 
 .customer-card__actions-menu {
-  position: relative;
+  position: absolute;
+  top: 24px;
+  right: 24px;
   flex: 0 0 auto;
 }
 
