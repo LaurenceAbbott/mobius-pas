@@ -747,6 +747,7 @@ nav-link i {
   display: grid;
   gap: 12px;
   width: 100%;
+  margin-top: 24px;
 }
 
 .action-panel,
