@@ -821,7 +821,8 @@ const closeSearchOverlay = () => {
 
 const handleDocumentClick = (event) => {
   if (!overlayIsOpen) return;
-  if (searchOverlay?.contains(event.target) || searchToggle?.contains(event.target)) {
+  const searchShell = searchOverlay?.querySelector(".search-shell");
+  if (searchShell?.contains(event.target) || searchToggle?.contains(event.target)) {
     return;
   }
   closeSearchOverlay();
