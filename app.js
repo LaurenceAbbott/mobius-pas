@@ -741,6 +741,9 @@ const initSearchInterface = (container, { mode, onClose } = {}) => {
           autocomplete="off"
           aria-label="Search clients by name or email"
         />
+        <button class="search-input__clear" type="button" aria-label="Clear search">
+          <i class="fa-sharp fa-light fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
       <div class="search-results" role="listbox" aria-label="Client search results"></div>
     </div>
@@ -748,15 +751,26 @@ const initSearchInterface = (container, { mode, onClose } = {}) => {
 
   const input = container.querySelector("input");
   const results = container.querySelector(".search-results");
+  const clearButton = container.querySelector(".search-input__clear");
   let latestMatches = [];
 
   const handleInput = () => {
     const query = input.value.trim().toLowerCase();
     latestMatches = renderSearchResults(query, results, onClose);
+    if (query) {
+      clearButton?.classList.add("is-visible");
+    } else {
+      clearButton?.classList.remove("is-visible");
+    }
   };
 
   input.addEventListener("input", handleInput);
   input.addEventListener("focus", handleInput);
+   clearButton?.addEventListener("click", () => {
+    input.value = "";
+    handleInput();
+    input.focus();
+  });
   input.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && latestMatches[0]) {
       event.preventDefault();
