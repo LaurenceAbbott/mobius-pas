@@ -182,11 +182,11 @@ const togglePinTab = (tabId) => {
   renderTabs();
 };
 
-    const renderTabs = () => {
+const renderTabs = () => {
   if (!tabBar) return;
   tabBar.innerHTML = "";
 
-    if (tabs.length === 0) {
+  if (tabs.length === 0) {
     const placeholder = document.createElement("div");
     placeholder.className = "tab tab--active";
     placeholder.innerHTML = `
@@ -213,7 +213,7 @@ const togglePinTab = (tabId) => {
       tabElement.classList.add("tab--pinned");
     }
 
-    onst meta = document.createElement("div");
+    const meta = document.createElement("div");
     meta.className = "tab__meta";
     meta.innerHTML = `
       <span class="tab__title">${tab.title}</span>
