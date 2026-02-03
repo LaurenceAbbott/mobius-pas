@@ -216,13 +216,8 @@ nav-link i {
   color: var(--mid-gray);
   cursor: pointer;
   padding: 2px;
-  opacity: 0;
-  transition: opacity 0.2s ease, color 0.2s ease;
-}
-
-.tab:hover .tab__close,
-.tab:focus-within .tab__close {
   opacity: 1;
+  transition: opacity 0.2s ease, color 0.2s ease;
 }
 
 .tab__close:hover {
@@ -341,6 +336,33 @@ span.search-result__name {
 
 .search-input i {
   color: var(--mid-gray);
+}
+
+.search-input__clear {
+  border: none;
+  background: transparent;
+  color: var(--mid-gray);
+  cursor: pointer;
+  margin-left: auto;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.search-input__clear.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.search-input__clear:hover,
+.search-input__clear:focus-visible {
+  color: var(--black);
+  outline: none;
 }
 
 .search-input input {
