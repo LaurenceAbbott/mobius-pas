@@ -351,6 +351,30 @@ span.search-result__name {
   color: var(--dark-gray);
 }
 
+.search-input input[type="search"]::-webkit-search-cancel-button,
+.search-input input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search-clear {
+  border: none;
+  background: transparent;
+  color: var(--mid-gray);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.search-clear:hover,
+.search-clear:focus-visible {
+  color: var(--black);
+  outline: none;
+}
+
 .search-results {
   display: grid;
   gap: 10px;
