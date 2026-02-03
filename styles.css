@@ -448,7 +448,7 @@ nav-link i {
 .empty-state__recent {
   display: grid;
    gap: 8px;
-  width: min(420px, 100%);
+  width: min(520px, 100%);
 }
 
 .empty-state__search {
@@ -616,11 +616,12 @@ nav-link i {
 }
 
 .customer-card {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-direction: column;
 }
 
 .customer-card__identity {
@@ -765,6 +766,7 @@ nav-link i {
   justify-content: center;
   color: var(--mid-gray);
   background: var(--light-gray);
+  width: 100%;
 }
 
 .work-area__content {
@@ -786,6 +788,7 @@ nav-link i {
   gap: 6px;
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
 }
 
 .policy-card.is-active {
@@ -811,6 +814,7 @@ nav-link i {
 .policy-card__meta {
   font-size: 0.85rem;
   color: var(--mid-gray);
+  text-align: left;
 }
 
 .policy-pill {
@@ -822,6 +826,11 @@ nav-link i {
   background: var(--light-gray);
   font-size: 0.8rem;
   color: var(--mid-gray);
+}
+
+.policy-branch {
+    margin-top: 16px;
+    margin-bottom: 8px;
 }
 
 /* Footer Component */
