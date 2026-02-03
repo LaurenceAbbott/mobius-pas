@@ -1,10 +1,10 @@
-import { clients } from "./clients.js";
-
 const tabBar = document.querySelector("#tabBar");
 const workspaceContent = document.querySelector("#workspaceContent");
 const searchToggle = document.querySelector("#searchToggle");
 const searchOverlay = document.querySelector("#searchOverlay");
 const tabActions = document.querySelector("#tabActions");
+
+const clients = window.CLIENTS || {};
 
 const TAB_STORAGE_KEY = "mobiusTabs";
 const ACTIVE_TAB_STORAGE_KEY = "mobiusActiveTab";
@@ -86,22 +86,22 @@ const formatAddress = (address) => {
   return `${parts.join(", ")}${parts.length ? " " : ""}${strongPostcode}`.trim();
 };
 
-const getClientByCustomerId = (customerId) => clientIndex[customerId];
+const getClientById = (clientId) => clientIndex[clientId];
 
 const getPolicyById = (client, policyId) =>
   client?.policies?.find((policy) => policy.id === policyId);
 
-const createTabId = (customerId) => `client-${customerId}`;
+const createTabId = (clientId) => `client-${clientId}`;
 
-const buildClientTab = (customerId, { selectedPolicyId = null } = {}) => {
-  const client = getClientByCustomerId(customerId);
+const buildClientTab = (clientId, { selectedPolicyId = null } = {}) => {
+  const client = getClientById(clientId);
   if (!client) return null;
 
   return {
-    id: createTabId(customerId),
+    id: createTabId(clientId),
     type: "client",
     pinned: false,
-    dataRef: { customerId },
+    dataRef: { clientId },
     activeClientAction: "Summary",
     activePolicyAction: "Risk",
     selectedPolicyId
@@ -109,7 +109,7 @@ const buildClientTab = (customerId, { selectedPolicyId = null } = {}) => {
 };
 
 const getTabDisplay = (tab) => {
-  const client = getClientByCustomerId(tab.dataRef.customerId);
+  const client = getClientById(tab.dataRef.clientId);
   if (!client) {
     return { title: "Unknown client", subtitle: "" };
   }
@@ -134,8 +134,8 @@ const persistTabs = () => {
 };
 
 const normalizeStoredTab = (tab) => {
-  const customerId = tab?.dataRef?.customerId ?? tab?.customerId;
-  if (!customerId) return null;
+  const clientId = tab?.dataRef?.clientId ?? tab?.dataRef?.customerId ?? tab?.clientId ?? tab?.customerId;
+  if (!clientId) return null;
   const policyId = tab?.dataRef?.policyId ?? tab?.policyId;
   const selectedPolicyId =
     tab?.selectedPolicyId ??
@@ -143,10 +143,10 @@ const normalizeStoredTab = (tab) => {
     null;
 
   return {
-    id: createTabId(customerId),
+    id: createTabId(clientId),
     type: "client",
     pinned: Boolean(tab?.pinned),
-    dataRef: { customerId },
+    dataRef: { clientId },
     activeClientAction: tab?.activeClientAction || "Summary",
     activePolicyAction: tab?.activePolicyAction || "Risk",
     selectedPolicyId
@@ -157,14 +157,15 @@ const getActiveSelection = (storedTabs, storedActiveId) => {
   if (!storedActiveId) return null;
   const activeTab = storedTabs.find((tab) => tab.id === storedActiveId);
   if (!activeTab) return null;
-  const customerId = activeTab?.dataRef?.customerId ?? activeTab?.customerId;
-  if (!customerId) return null;
+  const clientId =
+    activeTab?.dataRef?.clientId ?? activeTab?.dataRef?.customerId ?? activeTab?.clientId ?? activeTab?.customerId;
+  if (!clientId) return null;
   const policyId =
     activeTab?.type === "policy"
       ? activeTab?.dataRef?.policyId ?? activeTab?.policyId
       : activeTab?.selectedPolicyId ?? null;
   return {
-    customerId,
+    clientId,
     selectedPolicyId: policyId ?? null,
     activePolicyAction: activeTab?.activePolicyAction
   };
@@ -199,9 +200,9 @@ const restoreTabs = () => {
     .map(normalizeStoredTab)
     .filter(Boolean)
     .forEach((tab) => {
-      const existing = tabMap.get(tab.dataRef.customerId);
+      const existing = tabMap.get(tab.dataRef.clientId);
       if (!existing) {
-        tabMap.set(tab.dataRef.customerId, tab);
+        tabMap.set(tab.dataRef.clientId, tab);
         return;
       }
       existing.pinned = existing.pinned || tab.pinned;
@@ -212,8 +213,8 @@ const restoreTabs = () => {
       }
     });
 
-  if (activeSelection && tabMap.has(activeSelection.customerId)) {
-    const activeTab = tabMap.get(activeSelection.customerId);
+  if (activeSelection && tabMap.has(activeSelection.clientId)) {
+    const activeTab = tabMap.get(activeSelection.clientId);
     if (activeSelection.selectedPolicyId) {
       activeTab.selectedPolicyId = activeSelection.selectedPolicyId;
     }
@@ -224,7 +225,7 @@ const restoreTabs = () => {
 
   tabs = Array.from(tabMap.values());
   activeTabId = activeSelection
-    ? createTabId(activeSelection.customerId)
+    ? createTabId(activeSelection.clientId)
     : tabs[0]
     ? tabs[0].id
     : null;
@@ -254,8 +255,8 @@ const setActiveTab = (tabId) => {
   renderActiveView();
 };
 
-const openClientTab = (customerId, { selectedPolicyId = null } = {}) => {
-  const existingTab = tabs.find((tab) => tab.dataRef.customerId === customerId);
+const openClientTab = (clientId, { selectedPolicyId = null } = {}) => {
+  const existingTab = tabs.find((tab) => tab.dataRef.clientId === clientId);
   
   if (existingTab) {
     if (selectedPolicyId !== undefined) {
@@ -270,7 +271,7 @@ const openClientTab = (customerId, { selectedPolicyId = null } = {}) => {
     return;
   }
 
- const newTab = buildClientTab(customerId, { selectedPolicyId });
+ const newTab = buildClientTab(clientId, { selectedPolicyId });
   if (!newTab) return;
 
   tabs.push(newTab);
@@ -427,7 +428,7 @@ if (tabActions) {
       `;
 
         button.addEventListener("click", () =>
-        openClientTab(item.dataRef.customerId, {
+        openClientTab(item.dataRef.clientId, {
           selectedPolicyId: item.selectedPolicyId || null
         })
       );
@@ -603,20 +604,235 @@ const renderActionPanel = ({ title, actions, activeAction, onSelect, backAction 
   return panel;
 };
 
-const renderWorkArea = ({ title, activeAction, contextLabel }) => {
+const formatCurrency = (premium) => {
+  if (!premium?.gross || !premium?.currency) return "";
+  try {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: premium.currency
+    }).format(premium.gross);
+  } catch (error) {
+    return `${premium.currency} ${premium.gross}`;
+  }
+};
+
+const renderKeyValueList = (items) =>
+  items
+    .filter(({ value }) => value)
+    .map(
+      ({ label, value }) => `
+        <div class="kv-item">
+          <span class="kv-label">${label}</span>
+          <span class="kv-value">${value}</span>
+        </div>
+      `
+    )
+    .join("");
+
+const extractKeyValuePairs = (rows) =>
+  rows
+    .map((entry) => {
+      const [label, ...rest] = entry.split(":");
+      if (!rest.length) return null;
+      return { label: label.trim(), value: rest.join(":").trim() };
+    })
+    .filter(Boolean);
+
+const renderClientSummary = (client) => {
+  const snapshotItems = [
+    { label: "Email", value: client.email },
+    { label: "Phone", value: client.personal?.phone },
+    { label: "Date of birth", value: client.personal?.dob },
+    { label: "Address", value: formatAddress(client.personal?.address) },
+    { label: "Client since", value: client.personal?.clientSince },
+    { label: "Main driver", value: client.personal?.isMainDriver ? "Yes" : "No" }
+  ];
+
+  const productCards = (client.policies || [])
+    .map((policy) => {
+      const metaItems = [
+        policy.status ? `Status: ${policy.status}` : null,
+        policy.renewalDate ? `Renewal: ${policy.renewalDate}` : null,
+        policy.premium ? `Premium: ${formatCurrency(policy.premium)}` : null
+      ].filter(Boolean);
+
+      return `
+        <div class="mini-card">
+          <div class="mini-card__title">${policyTypeLabels[policy.type] || "Policy"}</div>
+          <div class="mini-card__ref">${policy.ref}</div>
+          <div class="mini-card__meta">
+            ${metaItems.map((item) => `<span>${item}</span>`).join("")}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  const recentItems = [
+    "New document request logged",
+    "Policy renewal reminder scheduled",
+    "Payment plan updated",
+    "Portal access reviewed"
+  ];
+
+  return `
+    <div class="work-section">
+      <div class="snapshot-card">
+        <div class="snapshot-card__header">
+          <h2>Client snapshot</h2>
+          <span class="snapshot-pill">Active client</span>
+        </div>
+        <div class="snapshot-card__grid">
+          ${renderKeyValueList(snapshotItems)}
+        </div>
+      </div>
+    </div>
+    <div class="work-section">
+      <h2 class="section-title">Products overview</h2>
+      <div class="mini-card-grid">
+        ${productCards}
+      </div>
+    </div>
+    <div class="work-section">
+      <h2 class="section-title">Recent items</h2>
+      <ul class="recent-list">
+        ${recentItems.map((item) => `<li>${item}</li>`).join("")}
+      </ul>
+    </div>
+  `;
+};
+
+const renderPolicyRisk = (client, policy) => {
+  const snapshotItems = [
+    { label: "Policy ref", value: policy.ref },
+    { label: "Product type", value: policyTypeLabels[policy.type] || policy.type },
+    { label: "Term", value: policy.term },
+    { label: "Renewal", value: policy.renewalDate },
+    { label: "Premium", value: formatCurrency(policy.premium) },
+    { label: "Cover type", value: policy.cover?.title },
+    { label: "Excess", value: policy.excesses?.items?.[0]?.value }
+  ];
+
+  const riskDetails = [
+    ...(policy.riskCard?.details || []),
+    ...(policy.people?.list || []).flatMap((person) => person.bullets || [])
+  ];
+  const riskPairs = extractKeyValuePairs(riskDetails);
+
+  return `
+    <div class="work-section">
+      <div class="snapshot-card">
+        <div class="snapshot-card__header">
+          <h2>Policy snapshot</h2>
+          <span class="snapshot-pill">${client.name}</span>
+        </div>
+        <div class="snapshot-card__grid">
+          ${renderKeyValueList(snapshotItems)}
+        </div>
+      </div>
+    </div>
+    <div class="work-section">
+      <h2 class="section-title">Risk details</h2>
+      ${
+        riskPairs.length
+          ? `<div class="risk-grid">${renderKeyValueList(riskPairs)}</div>`
+          : `<p class="panel-subtitle">No risk details captured.</p>`
+      }
+    </div>
+  `;
+};
+
+const renderBentoGrid = () => `
+  <div class="bento-grid">
+    <div class="bento-card bento-card--wide">
+      <h3>Overview</h3>
+      <p class="bento-muted">Policy servicing timeline, status checkpoints, and upcoming reviews.</p>
+      <ul class="bento-list">
+        <li>Mid-term adjustment workflow ready</li>
+        <li>Scheduled renewal review pending</li>
+        <li>Quote comparison checklist in progress</li>
+      </ul>
+    </div>
+    <div class="bento-card">
+      <h3>Summary stats</h3>
+      <div class="bento-stats">
+        <div>
+          <span class="bento-stat__label">Open items</span>
+          <span class="bento-stat__value">4</span>
+        </div>
+        <div>
+          <span class="bento-stat__label">Next milestone</span>
+          <span class="bento-stat__value">3 days</span>
+        </div>
+      </div>
+    </div>
+    <div class="bento-card">
+      <h3>Recent updates</h3>
+      <ul class="bento-list">
+        <li>Broker note added to timeline</li>
+        <li>Document request queued</li>
+        <li>Customer contact attempt logged</li>
+      </ul>
+    </div>
+    <div class="bento-card bento-card--tall">
+      <h3>Items</h3>
+      <ul class="bento-list">
+        <li>Awaiting supporting evidence</li>
+        <li>Referral placed with underwriter</li>
+        <li>Statement of fact shared</li>
+        <li>Payment plan review</li>
+      </ul>
+    </div>
+    <div class="bento-card">
+      <h3>Quick actions</h3>
+      <div class="bento-actions">
+        <button type="button">Create task</button>
+        <button type="button">Send reminder</button>
+        <button type="button">Generate pack</button>
+      </div>
+    </div>
+    <div class="bento-card">
+      <h3>Summary notes</h3>
+      <p class="bento-muted">Capture narrative updates for service journeys and compliance reviews.</p>
+    </div>
+  </div>
+`;
+
+const renderWorkArea = ({ client, policy, activeAction }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack work-panel";
+  const isPolicyView = Boolean(policy);
+  const headerTitle = activeAction;
+  const subheader = isPolicyView
+    ? `${policy.ref} • ${policyTypeLabels[policy.type] || policy.type} • ${client.name}`
+    : `${client.name}${client.email ? ` • ${client.email}` : ""}`;
+
+  let content = renderBentoGrid();
+  if (!isPolicyView && activeAction === "Summary") {
+    content = renderClientSummary(client);
+  }
+  if (isPolicyView && activeAction === "Risk") {
+    content = renderPolicyRisk(client, policy);
+  }
+  
   panel.innerHTML = `
-    <p class="panel-title">${title}</p>
     <div class="work-area">
-      <div class="work-area__content">Viewing: ${activeAction}${contextLabel ? ` • ${contextLabel}` : ""}</div>
+      <div class="work-header">
+        <div>
+          <h1>${headerTitle}</h1>
+          <p class="work-subheader">${subheader}</p>
+        </div>
+      </div>
+      <div class="work-area__body">
+        ${content}
+      </div>
     </div>
   `;
   return panel;
 };
 
 const renderClientView = (tab) => {
-  const client = getClientByCustomerId(tab.dataRef.customerId);
+  const client = getClientById(tab.dataRef.clientId);
   if (!client) return;
   const selectedPolicy = tab.selectedPolicyId
     ? getPolicyById(client, tab.selectedPolicyId)
@@ -649,9 +865,9 @@ const renderClientView = (tab) => {
 
     container.appendChild(
       renderWorkArea({
-        title: "Work area",
-        activeAction: tab.activePolicyAction,
-        contextLabel: selectedPolicy.ref
+        client,
+        policy: selectedPolicy,
+        activeAction: tab.activePolicyAction
       })
     );
   } else {
@@ -666,7 +882,8 @@ const renderClientView = (tab) => {
 
     container.appendChild(
       renderWorkArea({
-        title: "Work area",
+        client,
+        policy: null,
         activeAction: tab.activeClientAction
       })
     );
