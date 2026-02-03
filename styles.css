@@ -262,8 +262,8 @@ nav-link i {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
 }
 
-i.fa-sharp.fa-light.fa-magnifying-glass {
-    font-size: 1.2rem;
+.search-toggle i {
+  font-size: 1.2rem;
 }
 
 .search-toggle:hover,
