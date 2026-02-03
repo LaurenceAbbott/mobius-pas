@@ -243,14 +243,14 @@ const renderTabs = () => {
   tabBar.innerHTML = "";
 
   if (tabs.length === 0) {
-     searchToggle?.classList.add("is-hidden");
+    searchToggle?.classList.add("is-hidden");
     tabActions?.classList.add("is-hidden");
     if (typeof closeSearchOverlay === "function") {
       closeSearchOverlay();
     }
     return;
   }
-searchToggle?.classList.remove("is-hidden");
+  searchToggle?.classList.remove("is-hidden");
   tabActions?.classList.remove("is-hidden");
   
   tabs.forEach((tab) => {
@@ -317,10 +317,10 @@ searchToggle?.classList.remove("is-hidden");
     tabElement.append(meta, pinButton, closeButton);
     tabBar.appendChild(tabElement);
   });
-};
 if (tabActions) {
     tabBar.appendChild(tabActions);
   }
+  };
 
     const renderEmptyState = () => {
   if (!workspaceContent) return;
@@ -747,6 +747,9 @@ const initSearchInterface = (container, { mode, onClose } = {}) => {
           autocomplete="off"
           aria-label="Search clients by name or email"
         />
+        <button class="search-clear" type="button" aria-label="Clear search">
+          <i class="fa-sharp fa-light fa-xmark" aria-hidden="true"></i>
+        </button>
       </div>
       <div class="search-results" role="listbox" aria-label="Client search results"></div>
     </div>
@@ -754,11 +757,18 @@ const initSearchInterface = (container, { mode, onClose } = {}) => {
 
   const input = container.querySelector("input");
   const results = container.querySelector(".search-results");
+  const clearButton = container.querySelector(".search-clear");
   let latestMatches = [];
 
   const handleInput = () => {
     const query = input.value.trim().toLowerCase();
     latestMatches = renderSearchResults(query, results, onClose);
+  };
+
+  const clearSearch = () => {
+    input.value = "";
+    handleInput();
+    input.focus();
   };
 
   input.addEventListener("input", handleInput);
@@ -774,7 +784,8 @@ const initSearchInterface = (container, { mode, onClose } = {}) => {
       onClose?.();
     }
   });
-
+  clearButton?.addEventListener("click", clearSearch);
+  
   if (mode === "overlay") {
     input.focus();
   }
