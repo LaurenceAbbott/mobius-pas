@@ -152,6 +152,7 @@ nav-link i {
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: visible;
   padding-bottom: 6px;
   width: 100%;
   scrollbar-width: thin;
@@ -241,11 +242,12 @@ nav-link i {
   cursor: not-allowed;
 }
 
-.workspace__actions {
+.tab-bar__actions {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  flex: 0 0 auto;
+  margin-left: 4px;
 }
 
 .search-toggle {
@@ -281,8 +283,9 @@ nav-link i {
 .search-overlay {
   position: absolute;
   top: calc(100% + 12px);
-  left: 0;
-  width: min(420px, 90vw);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 64px));
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -336,33 +339,6 @@ span.search-result__name {
 
 .search-input i {
   color: var(--mid-gray);
-}
-
-.search-input__clear {
-  border: none;
-  background: transparent;
-  color: var(--mid-gray);
-  cursor: pointer;
-  margin-left: auto;
-  font-size: 1rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px;
-  opacity: 0;
-  pointer-events: none;
-  transition: color 0.2s ease, opacity 0.2s ease;
-}
-
-.search-input__clear.is-visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.search-input__clear:hover,
-.search-input__clear:focus-visible {
-  color: var(--black);
-  outline: none;
 }
 
 .search-input input {
