@@ -674,12 +674,15 @@ span.search-result__name {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .customer-card__identity {
   display: flex;
   align-items: flex-start;
   gap: 16px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .customer-card__avatar {
@@ -698,6 +701,7 @@ span.search-result__name {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .customer-card__name {
@@ -725,6 +729,7 @@ span.search-result__name {
 
 .customer-card__actions-menu {
   position: relative;
+  flex: 0 0 auto;
 }
 
 .customer-card__actions-toggle {
