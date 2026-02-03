@@ -626,7 +626,7 @@ nav-link i {
 
 .customer-card__identity {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
 }
 
@@ -649,7 +649,7 @@ nav-link i {
 }
 
 .customer-card__name {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 400;
   color: var(--black);
 }
@@ -696,7 +696,7 @@ nav-link i {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -704,7 +704,7 @@ nav-link i {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  font-size: 1rem;
+  font-size: .875rem;
   color: var(--dark-gray);
 }
 
@@ -831,6 +831,18 @@ nav-link i {
 .policy-branch {
     margin-top: 16px;
     margin-bottom: 8px;
+}
+
+.detail-icon {
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 12px;
+    background: var(--light-gray);
+    color: var(--black);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
 }
 
 /* Footer Component */
