@@ -38,103 +38,28 @@
 
     <!-- Main Layout Component -->
     <main class="app-main">
-      <!-- Left Panel Component -->
-      <aside class="left-panel">
-        <p class="panel-title">Left panel</p>
-        <p class="panel-subtitle">Work queue / navigation</p>
-        <div class="left-panel__clients">
-          <p class="left-panel__section-title">Clients</p>
-          <div class="client-accordion" id="clientAccordion"></div>
+      <section class="workspace">
+        <div class="workspace__bar">
+          <div class="tab-bar">
+            <div class="tab-bar__scroll" id="tabBar" role="tablist" aria-label="Workspace tabs"></div>
+          </div>
+        <div class="workspace__search">
+            <label class="search-label" for="clientSearch">Search clients</label>
+            <div class="search-input">
+              <i class="fa-sharp fa-light fa-magnifying-glass" aria-hidden="true"></i>
+              <input
+                id="clientSearch"
+                type="search"
+                placeholder="Search by name or email"
+                autocomplete="off"
+                aria-label="Search clients by name or email"
+              />
+            </div>
+          <div class="search-results" id="searchResults" role="listbox" aria-label="Client search results"></div>
+          </div>
         </div>
-      </aside>
 
-      <!-- Right Panel Component -->
-      <section class="right-panel">
-       <div class="right-panel__header panel-card">
-          <div class="customer-card">
-            <div class="customer-card__identity">
-              <div class="customer-card__avatar">
-                <i class="fa-sharp fa-light fa-user" aria-hidden="true"></i>
-              </div>
-              <div class="customer-card__identity-text">
-                 <h2 class="customer-card__name" data-client-name>Miss Katerina Danilovska</h2>
-                <span class="customer-card__email" data-client-email>k.danilovska@gmail.com</span>
-              </div>
-            </div>
-            <div class="customer-card__actions">
-              <button class="customer-card__link" type="button">
-                <i class="fa-sharp fa-light fa-headset" aria-hidden="true"></i>
-                Client support
-              </button>
-              <button class="customer-card__link" type="button">
-                <i class="fa-sharp fa-light fa-plus" aria-hidden="true"></i>
-                Add quote
-              </button>
-               <button class="customer-card__call" type="button">
-                <i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i>
-                Call now
-              </button>
-            </div>
-          </div>
-          <div class="customer-card__details">
-            <div class="customer-card__detail">
-              <span class="detail-icon"><i class="fa-sharp fa-light fa-cake-candles" aria-hidden="true"></i></span>
-              <span class="detail-text" data-client-dob>13/02/1996</span>
-            </div>
-            <div class="customer-card__detail">
-              <span class="detail-icon"><i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i></span>
-              <span class="detail-text" data-client-phone>+389 70 456 789</span>
-            </div>
-            <div class="customer-card__detail customer-card__detail--address">
-              <span class="detail-icon"><i class="fa-sharp fa-light fa-house" aria-hidden="true"></i></span>
-              <span class="detail-text" data-client-address>3 La Butte Court, La Butte, St. Peter Port, Guernsey <strong>GY1 1XA</strong></span>
-            </div>
-          </div>
-          <div class="customer-card__tags">
-            <span class="customer-tag" data-client-since>Client since: 12/12/2010</span>
-            <span class="customer-tag" data-client-main-driver>Is main driver</span>
-          </div>
-        </div>
-        <div class="right-panel__body">
-          <div class="panel-card panel-card--actions">
-            <nav class="actions-panel" aria-label="Work area menu">
-              <div class="menu-section" data-actions-type="client" id="client-actions" aria-hidden="false">
-                <p class="menu-title">Client</p>
-                <ul class="menu-list">
-                                    <li><button class="menu-link is-active" type="button" data-work-class="summary"><i class="fa-sharp fa-light fa-clipboard-list" aria-hidden="true"></i>Summary</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="business-details"><i class="fa-sharp fa-light fa-building" aria-hidden="true"></i>Business details</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="portal-access"><i class="fa-sharp fa-light fa-door-open" aria-hidden="true"></i>Portal access</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="transactions"><i class="fa-sharp fa-light fa-receipt" aria-hidden="true"></i>Transactions</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="activity"><i class="fa-sharp fa-light fa-waveform-lines" aria-hidden="true"></i>Activity</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="complaints"><i class="fa-sharp fa-light fa-triangle-exclamation" aria-hidden="true"></i>Complaints</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="client-checks"><i class="fa-sharp fa-light fa-user-check" aria-hidden="true"></i>Client checks</button></li>
-                </ul>
-              </div>
-              <div class="menu-section" data-actions-type="policy" id="policy-actions" aria-hidden="true" hidden>
-                <p class="menu-title">Policy</p>
-                <ul class="menu-list">
-                                    <li><button class="menu-link" type="button" data-work-class="risk"><i class="fa-sharp fa-light fa-shield" aria-hidden="true"></i>Risk</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="notes"><i class="fa-sharp fa-light fa-note-sticky" aria-hidden="true"></i>Notes</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="checklist"><i class="fa-sharp fa-light fa-list-check" aria-hidden="true"></i>Checklist</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="attachments"><i class="fa-sharp fa-light fa-paperclip" aria-hidden="true"></i>Attachments</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="history"><i class="fa-sharp fa-light fa-clock-rotate-left" aria-hidden="true"></i>History</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="tasks"><i class="fa-sharp fa-light fa-list" aria-hidden="true"></i>Tasks</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="policy-transactions"><i class="fa-sharp fa-light fa-money-bill-transfer" aria-hidden="true"></i>Transactions</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="documents"><i class="fa-sharp fa-light fa-folder-open" aria-hidden="true"></i>Documents</button></li>
-                  <li><button class="menu-link" type="button" data-work-class="claims"><i class="fa-sharp fa-light fa-file-circle-exclamation" aria-hidden="true"></i>Claims</button></li>
-                </ul>
-              </div>
-            </nav>
-          </div>
-          <div class="panel-card panel-card--work">
-            <p class="panel-title">Work area</p>
-             <div class="work-area" id="workArea">
-              <div class="work-area__content work-area__content--summary" id="workAreaContent">
-                Viewing: Summary
-              </div>
-            </div>
-          </div>
-        </div>
+         <div class="workspace__content" id="workspaceContent"></div>
       </section>
     </main>
 
