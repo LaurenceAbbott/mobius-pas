@@ -330,10 +330,18 @@ searchToggle?.classList.remove("is-hidden");
   `;
        
   const searchContainer = emptyState.querySelector("[data-search-container]");
-  initSearchInterface(searchContainer, { mode: "empty" });
+  if (searchContainer) {
+    initSearchInterface(searchContainer, { mode: "empty" });
+  }
 
   const recentList = emptyState.querySelector("[data-recent-list]");
   const recentItems = recentTabs.slice(0, 3);
+
+    if (!recentList) {
+    workspaceContent.appendChild(emptyState);
+    return;
+  }
+
 
   if (recentItems.length === 0) {
     const emptyMessage = document.createElement("div");
