@@ -742,7 +742,7 @@ const initSearchInterface = (container, { mode, onClose } = {}) => {
       <div class="search-input">
         <i class="fa-sharp fa-light fa-magnifying-glass" aria-hidden="true"></i>
         <input
-          type="search"
+          type="text"
           placeholder="Search by name or email"
           autocomplete="off"
           aria-label="Search clients by name or email"
