@@ -40,14 +40,16 @@
     <main class="app-main">
       <section class="workspace">
         <div class="workspace__bar">
-          <div class="tab-bar">
-            <div class="tab-bar__scroll" id="tabBar" role="tablist" aria-label="Workspace tabs"></div>
-          </div>
-        <div class="workspace__actions">
-            <button class="search-toggle" id="searchToggle" type="button" aria-label="Search clients">
-              <i class="fa-sharp fa-light fa-magnifying-glass" aria-hidden="true"></i>
+          <div class="workspace__bar-left">
+            <div class="workspace__actions">
+              <button class="search-toggle" id="searchToggle" type="button" aria-label="Search clients">
+                <i class="fa-sharp fa-light fa-magnifying-glass" aria-hidden="true"></i>
               </button>
             <div class="search-overlay" id="searchOverlay" aria-hidden="true"></div>
+            </div>
+            <div class="tab-bar">
+              <div class="tab-bar__scroll" id="tabBar" role="tablist" aria-label="Workspace tabs"></div>
+            </div>
           </div>
         </div>
 
