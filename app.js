@@ -414,28 +414,36 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy }) => {
   panel.className = "panel-card panel-card--stack client-panel";
   panel.innerHTML = `
     <div class="customer-card">
-      <div class="customer-card__identity">
-        <div class="customer-card__avatar">
-          <i class="fa-sharp fa-light fa-user" aria-hidden="true"></i>
+      <div class="customer-card__header">
+        <div class="customer-card__identity">
+          <div class="customer-card__avatar">
+            <i class="fa-sharp fa-light fa-user" aria-hidden="true"></i>
+          </div>
+          <div class="customer-card__identity-text">
+            <h2 class="customer-card__name">${client.name}</h2>
+            <span class="customer-card__email">${client.email}</span>
+            <span class="customer-card__since">Client since: ${client.personal?.clientSince || ""}</span>
+          </div>
         </div>
-        <div class="customer-card__identity-text">
-          <h2 class="customer-card__name">${client.name}</h2>
-          <span class="customer-card__email">${client.email}</span>
-        </div>
-      </div>
-      <div class="customer-card__actions">
-        <button class="customer-card__link" type="button">
-          <i class="fa-sharp fa-light fa-headset" aria-hidden="true"></i>
-          Client support
-        </button>
-        <button class="customer-card__link" type="button">
-          <i class="fa-sharp fa-light fa-plus" aria-hidden="true"></i>
-          Add quote
-        </button>
-        <button class="customer-card__call" type="button">
-          <i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i>
-          Call now
-        </button>
+        <details class="customer-card__actions-menu">
+          <summary class="customer-card__actions-toggle" aria-label="Client actions">
+            <i class="fa-sharp fa-light fa-ellipsis-vertical" aria-hidden="true"></i>
+          </summary>
+          <div class="customer-card__actions-popover" role="menu">
+            <button class="customer-card__action-item" type="button" role="menuitem">
+              <i class="fa-sharp fa-light fa-headset" aria-hidden="true"></i>
+              Client support
+            </button>
+            <button class="customer-card__action-item" type="button" role="menuitem">
+              <i class="fa-sharp fa-light fa-plus" aria-hidden="true"></i>
+              Add quote
+            </button>
+            <button class="customer-card__action-item" type="button" role="menuitem">
+              <i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i>
+              Call now
+            </button>
+          </div>
+        </details>
       </div>
     </div>
      <div class="customer-card__details">
@@ -451,10 +459,6 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy }) => {
         <span class="detail-icon"><i class="fa-sharp fa-light fa-house" aria-hidden="true"></i></span>
         <span class="detail-text">${formatAddress(client.personal?.address)}</span>
       </div>
-    </div>
-    <div class="customer-card__tags">
-      <span class="customer-tag">Client since: ${client.personal?.clientSince || ""}</span>
-      <span class="customer-tag">${client.personal?.isMainDriver ? "Is main driver" : "Not main driver"}</span>
     </div>
     <div class="client-panel__section">
       <p class="menu-title">Product list</p>
