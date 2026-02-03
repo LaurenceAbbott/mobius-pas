@@ -19,6 +19,31 @@ let tabs = [];
 let activeTabId = null;
 let recentTabs = [];
 
+const clientActions = [
+  "Summary",
+  "Business details",
+  "Transactions",
+  "Activity",
+  "Complaints",
+  "Portal access",
+  "Claims",
+  "Client checks"
+];
+
+const policyActions = [
+  "Risk",
+  "Breakdown",
+  "Quote details & conditions",
+  "Notes",
+  "Checklist",
+  "Attachments",
+  "History",
+  "Tasks",
+  "Transactions",
+  "Documents",
+  "Claims"
+];
+
 const policyTypeLabels = {
   motor: "Motor",
   home: "Home",
@@ -33,6 +58,8 @@ const policyIconClasses = {
 
 const policyNavIcons = {
   Risk: "fa-sharp fa-light fa-shield",
+  Breakdown: "fa-sharp fa-light fa-list",
+  "Quote details & conditions": "fa-sharp fa-light fa-file-invoice",
   Notes: "fa-sharp fa-light fa-note-sticky",
   Checklist: "fa-sharp fa-light fa-list-check",
   Attachments: "fa-sharp fa-light fa-paperclip",
@@ -40,7 +67,13 @@ const policyNavIcons = {
   Tasks: "fa-sharp fa-light fa-list",
   Transactions: "fa-sharp fa-light fa-money-bill-transfer",
   Documents: "fa-sharp fa-light fa-folder-open",
-  Claims: "fa-sharp fa-light fa-file-circle-exclamation"
+  Claims: "fa-sharp fa-light fa-file-circle-exclamation",
+  Summary: "fa-sharp fa-light fa-chart-pie",
+  "Business details": "fa-sharp fa-light fa-building",
+  Activity: "fa-sharp fa-light fa-wave-pulse",
+  Complaints: "fa-sharp fa-light fa-comment-dots",
+  "Portal access": "fa-sharp fa-light fa-door-open",
+  "Client checks": "fa-sharp fa-light fa-badge-check"
 };
 
 const formatAddress = (address) => {
@@ -78,7 +111,8 @@ const buildTabModel = ({ type, customerId, policyId }) => {
       title: policy.ref,
       subtitle: `${policyTypeLabels[policy.type] || "Policy"} • ${client.name}`,
       pinned: false,
-      dataRef: { customerId, policyId }
+      dataRef: { customerId, policyId },
+      activePolicyAction: "Risk"
     };
   }
 
@@ -88,7 +122,9 @@ const buildTabModel = ({ type, customerId, policyId }) => {
     title: client.name,
     subtitle: client.email,
     pinned: false,
-    dataRef: { customerId }
+    dataRef: { customerId },
+    activeClientAction: "Summary",
+    lastSelectedPolicyId: null
   };
 };
 
@@ -119,6 +155,23 @@ const restoreTabs = () => {
     }
   }
 
+  tabs = tabs.map((tab) => {
+    if (tab.type === "client") {
+      return {
+        ...tab,
+        activeClientAction: tab.activeClientAction || "Summary",
+        lastSelectedPolicyId: tab.lastSelectedPolicyId || null
+      };
+    }
+    if (tab.type === "policy") {
+      return {
+        ...tab,
+        activePolicyAction: tab.activePolicyAction || "Risk"
+      };
+    }
+    return tab;
+  });
+
   activeTabId = storedActive || (tabs[0] ? tabs[0].id : null);
 };
 
@@ -136,7 +189,20 @@ const setActiveTab = (tabId) => {
   renderActiveView();
 };
 
+const updateClientSelection = (customerId, policyId) => {
+  const clientTab = tabs.find(
+    (tab) => tab.type === "client" && tab.dataRef.customerId === customerId
+  );
+  if (clientTab) {
+    clientTab.lastSelectedPolicyId = policyId;
+  }
+};
+
 const openTab = ({ type, customerId, policyId }) => {
+    if (type === "policy") {
+    updateClientSelection(customerId, policyId);
+  }
+
   const existingTab = tabs.find(
     (tab) =>
       tab.type === type &&
@@ -267,7 +333,7 @@ const renderTabs = () => {
     <div class="empty-state__recent" data-recent-list></div>
   `;
       
-      const recentList = emptyState.querySelector("[data-recent-list]");
+       const recentList = emptyState.querySelector("[data-recent-list]");
   const recentItems = recentTabs.slice(0, 3);
 
   if (recentItems.length === 0) {
@@ -298,86 +364,88 @@ const renderTabs = () => {
 
        recentList.appendChild(button);
     });
-    }
+   }
 
   workspaceContent.appendChild(emptyState);
 };
 
-const renderClientView = (tab) => {
-  const client = getClientByCustomerId(tab.dataRef.customerId);
-  if (!client) return;
+const setClientAction = (tabId, action) => {
+  const tab = tabs.find((item) => item.id === tabId);
+  if (!tab) return;
+  tab.activeClientAction = action;
+  persistTabs();
+  renderActiveView();
+};
 
-    const container = document.createElement("div");
-  container.className = "right-panel";
-  container.innerHTML = `
-    <div class="right-panel__header panel-card">
-      <div class="customer-card">
-        <div class="customer-card__identity">
-          <div class="customer-card__avatar">
-            <i class="fa-sharp fa-light fa-user" aria-hidden="true"></i>
-          </div>
-          <div class="customer-card__identity-text">
-            <h2 class="customer-card__name">${client.name}</h2>
-            <span class="customer-card__email">${client.email}</span>
-          </div>
+    const setPolicyAction = (tabId, action) => {
+  const tab = tabs.find((item) => item.id === tabId);
+  if (!tab) return;
+  tab.activePolicyAction = action;
+  persistTabs();
+  renderActiveView();
+};
+
+const renderClientPanel = ({ client, selectedPolicyId }) => {
+  const panel = document.createElement("div");
+  panel.className = "panel-card panel-card--stack client-panel";
+  panel.innerHTML = `
+    <div class="customer-card">
+      <div class="customer-card__identity">
+        <div class="customer-card__avatar">
+          <i class="fa-sharp fa-light fa-user" aria-hidden="true"></i>
         </div>
-        <div class="customer-card__actions">
-          <button class="customer-card__link" type="button">
-            <i class="fa-sharp fa-light fa-headset" aria-hidden="true"></i>
-            Client support
-          </button>
-          <button class="customer-card__link" type="button">
-            <i class="fa-sharp fa-light fa-plus" aria-hidden="true"></i>
-            Add quote
-          </button>
-          <button class="customer-card__call" type="button">
-            <i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i>
-            Call now
-          </button>
+        <div class="customer-card__identity-text">
+          <h2 class="customer-card__name">${client.name}</h2>
+          <span class="customer-card__email">${client.email}</span>
         </div>
       </div>
-      <div class="customer-card__details">
-        <div class="customer-card__detail">
-          <span class="detail-icon"><i class="fa-sharp fa-light fa-cake-candles" aria-hidden="true"></i></span>
-          <span class="detail-text">${client.personal?.dob || ""}</span>
-        </div>
-        <div class="customer-card__detail">
-          <span class="detail-icon"><i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i></span>
-          <span class="detail-text">${client.personal?.phone || ""}</span>
-        </div>
-        <div class="customer-card__detail customer-card__detail--address">
-          <span class="detail-icon"><i class="fa-sharp fa-light fa-house" aria-hidden="true"></i></span>
-          <span class="detail-text">${formatAddress(client.personal?.address)}</span>
-        </div>
-      </div>
-      <div class="customer-card__tags">
-        <span class="customer-tag">Client since: ${client.personal?.clientSince || ""}</span>
-        <span class="customer-tag">${client.personal?.isMainDriver ? "Is main driver" : "Not main driver"}</span>
+      <div class="customer-card__actions">
+        <button class="customer-card__link" type="button">
+          <i class="fa-sharp fa-light fa-headset" aria-hidden="true"></i>
+          Client support
+        </button>
+        <button class="customer-card__link" type="button">
+          <i class="fa-sharp fa-light fa-plus" aria-hidden="true"></i>
+          Add quote
+        </button>
+        <button class="customer-card__call" type="button">
+          <i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i>
+          Call now
+        </button>
       </div>
     </div>
-    <div class="right-panel__body">
-      <div class="panel-card panel-card--actions">
-        <div class="actions-panel">
-          <div class="menu-section">
-            <p class="menu-title">Policies</p>
-            <div class="policy-list" data-policy-list></div>
-          </div>
-        </div>
+     <div class="customer-card__details">
+      <div class="customer-card__detail">
+        <span class="detail-icon"><i class="fa-sharp fa-light fa-cake-candles" aria-hidden="true"></i></span>
+        <span class="detail-text">${client.personal?.dob || ""}</span>
       </div>
-      <div class="panel-card panel-card--work">
-        <p class="panel-title">Work area</p>
-        <div class="work-area">
-          <div class="work-area__content">Select a policy to open its risk view.</div>
-        </div>
+      <div class="customer-card__detail">
+        <span class="detail-icon"><i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i></span>
+        <span class="detail-text">${client.personal?.phone || ""}</span>
       </div>
+      <div class="customer-card__detail customer-card__detail--address">
+        <span class="detail-icon"><i class="fa-sharp fa-light fa-house" aria-hidden="true"></i></span>
+        <span class="detail-text">${formatAddress(client.personal?.address)}</span>
+      </div>
+    </div>
+    <div class="customer-card__tags">
+      <span class="customer-tag">Client since: ${client.personal?.clientSince || ""}</span>
+      <span class="customer-tag">${client.personal?.isMainDriver ? "Is main driver" : "Not main driver"}</span>
+    </div>
+    <div class="client-panel__section">
+      <p class="menu-title">Product list</p>
+      <div class="policy-list" data-policy-list></div>
     </div>
   `;
 
-  const list = container.querySelector("[data-policy-list]");
+  const list = panel.querySelector("[data-policy-list]");
   client.policies?.forEach((policy) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "policy-card";
+     if (policy.id === selectedPolicyId) {
+      button.classList.add("is-active");
+    }
     button.innerHTML = `
       <div class="policy-card__title">
         <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
@@ -398,6 +466,84 @@ const renderClientView = (tab) => {
     list.appendChild(button);
   });
 
+  return panel;
+};
+
+const renderActionPanel = ({ title, actions, activeAction, onSelect }) => {
+  const panel = document.createElement("div");
+  panel.className = "panel-card panel-card--stack action-panel";
+  panel.innerHTML = `
+    <div class="actions-panel">
+      <div class="menu-section">
+        <p class="menu-title">${title}</p>
+        <ul class="menu-list"></ul>
+      </div>
+    </div>
+  `;
+
+  const menuList = panel.querySelector(".menu-list");
+  actions.forEach((label) => {
+    const listItem = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "menu-link";
+    if (label === activeAction) {
+      button.classList.add("is-active");
+    }
+    const iconClass = policyNavIcons[label] || "fa-sharp fa-light fa-file";
+    button.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i>${label}`;
+
+    button.addEventListener("click", () => onSelect(label));
+
+    listItem.appendChild(button);
+    menuList.appendChild(listItem);
+  });
+
+  return panel;
+};
+
+const renderWorkArea = ({ title, activeAction }) => {
+  const panel = document.createElement("div");
+  panel.className = "panel-card panel-card--stack work-panel";
+  panel.innerHTML = `
+    <p class="panel-title">${title}</p>
+    <div class="work-area">
+      <div class="work-area__content">Viewing: ${activeAction}</div>
+    </div>
+  `;
+  return panel;
+};
+
+const renderClientView = (tab) => {
+  const client = getClientByCustomerId(tab.dataRef.customerId);
+  if (!client) return;
+
+  const container = document.createElement("div");
+  container.className = "workspace-grid";
+
+  container.appendChild(
+    renderClientPanel({
+      client,
+      selectedPolicyId: tab.lastSelectedPolicyId
+    })
+  );
+
+  container.appendChild(
+    renderActionPanel({
+      title: "Client actions",
+      actions: clientActions,
+      activeAction: tab.activeClientAction,
+      onSelect: (action) => setClientAction(tab.id, action)
+    })
+  );
+
+  container.appendChild(
+    renderWorkArea({
+      title: "Work area",
+      activeAction: tab.activeClientAction
+    })
+  );
+
   workspaceContent.appendChild(container);
 };
 
@@ -408,74 +554,30 @@ const renderPolicyView = (tab) => {
   if (!policy) return;
 
   const container = document.createElement("div");
-  container.className = "right-panel";
-  container.innerHTML = `
-    <div class="right-panel__header panel-card">
-      <div class="customer-card">
-        <div class="customer-card__identity">
-          <div class="customer-card__avatar">
-            <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
-          </div>
-          <div class="customer-card__identity-text">
-            <h2 class="customer-card__name">${policy.ref}</h2>
-            <span class="customer-card__email">${policyTypeLabels[policy.type] || "Policy"} • ${client.name}</span>
-          </div>
-        </div>
-        <div class="customer-card__actions">
-          <span class="policy-pill">${policy.status}</span>
-          <span class="policy-pill">Renewal ${policy.renewalDate}</span>
-        </div>
-      </div>
-      <div class="customer-card__details">
-        <div class="customer-card__detail">
-          <span class="detail-icon"><i class="fa-sharp fa-light fa-shield" aria-hidden="true"></i></span>
-          <span class="detail-text">${policy.productPath}</span>
-        </div>
-      </div>
-    </div>
-    <div class="right-panel__body">
-      <div class="panel-card panel-card--actions">
-        <div class="actions-panel">
-          <div class="menu-section" data-policy-nav>
-            <p class="menu-title">Policy</p>
-            <ul class="menu-list"></ul>
-          </div>
-        </div>
-      </div>
-      <div class="panel-card panel-card--work">
-        <p class="panel-title">Work area</p>
-        <div class="work-area">
-          <div class="work-area__content" data-policy-content>Viewing: Risk</div>
-        </div>
-      </div>
-    </div>
-  `;
+  container.className = "workspace-grid";
 
-  const menuList = container.querySelector(".menu-list");
-  const content = container.querySelector("[data-policy-content]");
-  const navItems = policy.policyNav || ["Risk", "Notes", "Checklist", "Attachments", "History", "Tasks"];
+  container.appendChild(
+    renderClientPanel({
+      client,
+      selectedPolicyId: policy.id
+    })
+  );
 
-  navItems.forEach((label, index) => {
-    const listItem = document.createElement("li");
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "menu-link";
-    if (index === 0) {
-      button.classList.add("is-active");
-    }
-    const iconClass = policyNavIcons[label] || "fa-sharp fa-light fa-file";
-    button.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i>${label}`;
+  container.appendChild(
+    renderActionPanel({
+      title: "Policy actions",
+      actions: policyActions,
+      activeAction: tab.activePolicyAction,
+      onSelect: (action) => setPolicyAction(tab.id, action)
+    })
+  );
 
-    button.addEventListener("click", () => {
-      container.querySelectorAll(".menu-link").forEach((item) =>
-        item.classList.toggle("is-active", item === button)
-      );
-      content.textContent = `Viewing: ${label}`;
-    });
-
-    listItem.appendChild(button);
-    menuList.appendChild(listItem);
-  });
+  container.appendChild(
+    renderWorkArea({
+      title: "Work area",
+      activeAction: tab.activePolicyAction
+    })
+  );
 
   workspaceContent.appendChild(container);
 };
