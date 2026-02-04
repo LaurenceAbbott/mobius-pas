@@ -1451,7 +1451,25 @@ const renderBentoGrid = () => `
   if (isPolicyView && activeAction === "Risk") {
     content = renderPolicyRisk(client, policy);
   }
-  
+
+    const fullscreenButton = `
+          <button
+            type="button"
+            class="work-header__icon-button"
+            data-action="toggle-work-area-fullscreen"
+            data-tooltip="${isWorkAreaFullscreen ? "Exit full screen" : "Full screen"}"
+            aria-label="${isWorkAreaFullscreen ? "Exit full screen" : "Enter full screen"}"
+          >
+            <i class="fa-sharp fa-light ${
+              isWorkAreaFullscreen ? "fa-xmark" : "fa-up-right-and-down-left-from-center"
+            }" aria-hidden="true"></i>
+          </button>
+        `;
+  const lockEditLink = isLocked
+    ? `<a href="#" class="lock-edit" data-action="edit-lock-note">Edit note</a>`
+    : "";
+  const lockDivider = isLocked ? `<span class="work-header__divider" aria-hidden="true"></span>` : "";
+
   panel.innerHTML = `
     <div class="work-area">
       <div class="work-header">
@@ -1464,18 +1482,9 @@ const renderBentoGrid = () => `
             <i class="fa-sharp fa-light ${isLocked ? "fa-lock" : "fa-lock-open"}" aria-hidden="true"></i>
             <span>${isLocked ? "Locked" : "Lock"}</span>
           </button>
-          <button
-            type="button"
-            class="work-header__icon-button"
-            data-action="toggle-work-area-fullscreen"
-            data-tooltip="${isWorkAreaFullscreen ? "Exit full screen" : "Full screen"}"
-            aria-label="${isWorkAreaFullscreen ? "Exit full screen" : "Enter full screen"}"
-          >
-            <i class="fa-sharp fa-light ${
-              isWorkAreaFullscreen ? "fa-xmark" : "fa-up-right-and-down-left-from-center"
-            }" aria-hidden="true"></i>
-          </button>
-          ${isLocked ? `<a href="#" class="lock-edit" data-action="edit-lock-note">Edit note</a>` : ""}
+          ${lockEditLink}
+          ${lockDivider}
+          ${fullscreenButton}
         </div>
       </div>
       <div class="work-area__body">
