@@ -1600,6 +1600,9 @@ span.search-result__name {
   background: var(--light-gray);
   display: grid;
   gap: 10px;
+  align-content: start;
+  align-items: start;
+  justify-items: start;
   align-self: stretch;
 }
 
