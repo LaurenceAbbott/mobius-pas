@@ -584,11 +584,6 @@ span.search-result__name {
   position: relative;
 }
 
-.client-panel--policy {
-  background: #f7f8fb;
-  border-color: #e6e8ee;
-}
-
 .actions-panel {
      width: 100%;
   text-align: left;
@@ -743,23 +738,6 @@ span.search-result__name {
   width: fit-content;
 }
 
-.client-back {
-  border: none;
-  background: transparent;
-  color: var(--links);
-  font-size: 0.85rem;
-  font-weight: 500;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-}
-
-.client-back:hover,
-.client-back:focus-visible {
-  text-decoration: underline;
-  outline: none;
-}
-
 .customer-card__actions-menu {
   position: absolute;
   top: 24px;
@@ -834,11 +812,6 @@ span.search-result__name {
   gap: 8px;
   width: 100%;
   margin-top: 16px;
-}
-
-.client-panel--policy .customer-card__details,
-.client-panel--policy .customer-card__since {
-  display: none;
 }
 
 .customer-card__detail {
@@ -1128,19 +1101,6 @@ span.search-result__name {
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   text-align: left;
-}
-
-.client-panel--policy .policy-card {
-  padding: 10px 12px;
-  border-radius: 12px;
-}
-
-.client-panel--policy .policy-card__title {
-  font-size: 0.9rem;
-}
-
-.client-panel--policy .policy-card__meta {
-  font-size: 0.75rem;
 }
 
 .policy-card.is-active {
