@@ -1020,7 +1020,7 @@ const renderClientPanel = ({ client }) => {
         <span class="detail-icon"><i class="fa-sharp fa-light fa-phone" aria-hidden="true"></i></span>
         <span class="detail-text">${client.personal?.phone || ""}</span>
       </div>
-      <div class="customer-card__detail customer-card__detail--address">
+      <div class="customer-card__detail">
         <span class="detail-icon"><i class="fa-sharp fa-light fa-house" aria-hidden="true"></i></span>
         <span class="detail-text">${formatAddress(client.personal?.address)}</span>
       </div>
