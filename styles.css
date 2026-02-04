@@ -1159,25 +1159,60 @@ span.search-result__name {
   pointer-events: none;
 }
 
-.lock-note-popover {
+.lock-note-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
+  background: rgba(15, 15, 15, 0.35);
+  z-index: 60;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.lock-note-overlay.is-open {
+  display: flex;
+}
+
+.lock-note-popover {
   border: 1px solid var(--border);
   background: var(--white);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 16px;
+  padding: 20px;
   display: grid;
-  gap: 8px;
-  width: min(400px, 90vw);
+  gap: 12px;
+  width: min(520px, calc(100vw - 48px));
   box-shadow: 0 16px 32px rgba(15, 15, 15, 0.14);
-  z-index: 9998;
+  position: relative;
+}
+
+.lock-note-popover__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .lock-note-popover__title {
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--dark-gray);
+}
+
+.lock-note-popover__close {
+  border: none;
+  background: transparent;
+  color: var(--mid-gray);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.lock-note-popover__close:hover,
+.lock-note-popover__close:focus-visible {
+  color: var(--black);
+  outline: none;
 }
 
 .lock-note-popover__label {
@@ -1225,9 +1260,21 @@ span.search-result__name {
   cursor: pointer;
 }
 
+.lock-note-popover__actions button.is-primary {
+  background: var(--black);
+  border-color: var(--black);
+  color: var(--white);
+}
+
 .lock-note-popover__actions button:hover,
 .lock-note-popover__actions button:focus-visible {
   border-color: #cfd4dc;
+  outline: none;
+}
+
+.lock-note-popover__actions button.is-primary:hover,
+.lock-note-popover__actions button.is-primary:focus-visible {
+  border-color: var(--black);
   outline: none;
 }
 
