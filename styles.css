@@ -1585,6 +1585,7 @@ span.search-result__name {
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: start;
 }
 
 .bento-card {
@@ -1595,6 +1596,7 @@ span.search-result__name {
   background: var(--light-gray);
   display: grid;
   gap: 10px;
+  align-self: start;
 }
 
 .bento-card--wide {
