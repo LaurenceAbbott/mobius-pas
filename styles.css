@@ -24,10 +24,13 @@ body {
   color: var(--dark-gray);
   min-height: 100vh;
   font-weight: 300;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app-shell {
   min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -116,14 +119,18 @@ body {
 /* Main Layout Component */
 .app-main {
   flex: 1;
-  display: block;
+  display: flex;
+  flex-direction: column;
   padding: 16px;
+  overflow: hidden;
 }
 
 .workspace {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
 .workspace__bar {
@@ -544,6 +551,8 @@ span.search-result__name {
 .workspace__content {
   display: grid;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
 .workspace-grid {
@@ -551,6 +560,8 @@ span.search-result__name {
   grid-template-columns: minmax(280px, 340px) minmax(220px, 280px) 1fr;
   gap: 16px;
   min-height: 320px;
+  height: 100%;
+  min-height: 0;
 }
 
 .empty-state {
@@ -649,6 +660,8 @@ span.search-result__name {
   align-items: center;
   justify-content: center;
   text-align: center;
+  height: 100%;
+  min-height: 0;
 }
 
 .panel-card--stack {
@@ -661,6 +674,7 @@ span.search-result__name {
 
 .client-panel {
   position: relative;
+  overflow: auto;
 }
 
 .actions-panel {
@@ -1181,15 +1195,25 @@ span.search-result__name {
   width: 100%;
 }
 
+.action-panel {
+  overflow: auto;
+}
+
+.work-panel {
+  overflow: hidden;
+}
+
 .work-area {
   margin-top: 12px;
   border-radius: 12px;
   min-height: 220px;
-  display: grid;
   gap: 20px;
   color: var(--dark-gray);
   background: var(--white);
   width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .work-header h1 {
@@ -1403,6 +1427,43 @@ span.search-result__name {
 .work-area__body {
   display: grid;
   gap: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.client-panel,
+.action-panel,
+.work-area__body {
+  scrollbar-width: thin;
+  scrollbar-color: #c7cbd4 #f2f3f7;
+}
+
+.client-panel::-webkit-scrollbar,
+.action-panel::-webkit-scrollbar,
+.work-area__body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.client-panel::-webkit-scrollbar-track,
+.action-panel::-webkit-scrollbar-track,
+.work-area__body::-webkit-scrollbar-track {
+  background: #f2f3f7;
+  border-radius: 999px;
+}
+
+.client-panel::-webkit-scrollbar-thumb,
+.action-panel::-webkit-scrollbar-thumb,
+.work-area__body::-webkit-scrollbar-thumb {
+  background: #c7cbd4;
+  border-radius: 999px;
+  border: 2px solid #f2f3f7;
+}
+
+.client-panel::-webkit-scrollbar-thumb:hover,
+.action-panel::-webkit-scrollbar-thumb:hover,
+.work-area__body::-webkit-scrollbar-thumb:hover {
+  background: #b4b9c4;
 }
 
 .work-section {
