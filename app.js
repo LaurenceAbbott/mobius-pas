@@ -27,9 +27,9 @@ let lockNoteEditorState = { tabId: null, isOpen: false, mode: "add" };
 let lockPopoverListeners = { outside: null, keydown: null };
 let appTooltip = null;
 let tooltipTarget = null;
+let lockNoteOverlay = null;
 let lockNotePopover = null;
 let lockNotePopoverElements = null;
-let lockPopoverAnchor = null;
 
 const clientActions = [
   "Summary",
@@ -398,17 +398,16 @@ const clearLockPopoverListeners = () => {
 
 const closeLockNoteEditor = () => {
   lockNoteEditorState = { tabId: null, isOpen: false, mode: "add" };
-  lockPopoverAnchor = null;
-  if (lockNotePopover) {
-    lockNotePopover.setAttribute("aria-hidden", "true");
-    lockNotePopover.hidden = true;
+  if (lockNoteOverlay) {
+    lockNoteOverlay.classList.remove("is-open");
+    lockNoteOverlay.setAttribute("aria-hidden", "true");
+    lockNoteOverlay.hidden = true;
   }
   clearLockPopoverListeners();
 };
 
-const openLockNoteEditor = (tabId, mode = "add", anchorType = "lock-edit") => {
+const openLockNoteEditor = (tabId, mode = "add") => {
   lockNoteEditorState = { tabId, isOpen: true, mode };
-  lockPopoverAnchor = anchorType;
 };
 
 const ensureTooltip = () => {
@@ -474,15 +473,28 @@ const getLockNoteTab = () => tabs.find((tab) => tab.id === lockNoteEditorState.t
 
 const ensureLockNotePopover = () => {
   if (lockNotePopover) return lockNotePopoverElements;
+  lockNoteOverlay = document.createElement("div");
+  lockNoteOverlay.className = "lock-note-overlay";
+  lockNoteOverlay.setAttribute("aria-hidden", "true");
+  lockNoteOverlay.hidden = true;
+
   lockNotePopover = document.createElement("div");
   lockNotePopover.id = LOCK_NOTE_POPOVER_ID;
   lockNotePopover.className = "lock-note-popover";
   lockNotePopover.setAttribute("role", "dialog");
-  lockNotePopover.setAttribute("aria-modal", "false");
-  lockNotePopover.setAttribute("aria-hidden", "true");
-  lockNotePopover.hidden = true;
+  lockNotePopover.setAttribute("aria-modal", "true");
   lockNotePopover.innerHTML = `
-    <div class="lock-note-popover__title" id="lock-note-title">Lock note</div>
+    <div class="lock-note-popover__header">
+      <div class="lock-note-popover__title" id="lock-note-title">Lock note</div>
+      <button
+        type="button"
+        class="lock-note-popover__close"
+        data-action="close-lock-note"
+        aria-label="Close lock note"
+      >
+        &times;
+      </button>
+    </div>
     <label class="lock-note-popover__label" for="lock-note-input">Note</label>
     <input
       id="lock-note-input"
@@ -495,13 +507,13 @@ const ensureLockNotePopover = () => {
       <span class="lock-note-popover__count">0/${LOCK_NOTE_MAX}</span>
     </div>
     <div class="lock-note-popover__actions">
-      <button type="button" data-action="save-lock-note">Save</button>
-      <button type="button" data-action="cancel-lock-note">Cancel</button>
+      <button type="button" class="is-primary" data-action="save-lock-note">Save</button>
       <button type="button" data-action="clear-lock-note">Clear</button>
     </div>
   `;
   lockNotePopover.setAttribute("aria-labelledby", "lock-note-title");
-  document.body.appendChild(lockNotePopover);
+  lockNoteOverlay.appendChild(lockNotePopover);
+  document.body.appendChild(lockNoteOverlay);
   lockNotePopoverElements = {
     input: lockNotePopover.querySelector(".lock-note-popover__input"),
     count: lockNotePopover.querySelector(".lock-note-popover__count"),
@@ -521,26 +533,6 @@ const ensureLockNotePopover = () => {
   return lockNotePopoverElements;
 };
 
-const positionLockNotePopover = (anchor) => {
-  if (!lockNotePopover || !anchor) return;
-  const rect = anchor.getBoundingClientRect();
-  const spacing = 10;
-  const popoverRect = lockNotePopover.getBoundingClientRect();
-  let top = rect.bottom + spacing;
-  let left = rect.right - popoverRect.width;
-  const maxLeft = window.innerWidth - popoverRect.width - spacing;
-  if (left < spacing) left = spacing;
-  if (left > maxLeft) left = maxLeft;
-  if (top + popoverRect.height > window.innerHeight - spacing) {
-    const alternateTop = rect.top - popoverRect.height - spacing;
-    if (alternateTop > spacing) {
-      top = alternateTop;
-    }
-  }
-  lockNotePopover.style.top = `${top}px`;
-  lockNotePopover.style.left = `${left}px`;
-};
-
 const updateLockNotePopoverContent = (tab) => {
   if (!tab || !lockNotePopoverElements) return;
   const { input, count } = lockNotePopoverElements;
@@ -551,13 +543,13 @@ const updateLockNotePopoverContent = (tab) => {
   count.textContent = `${input.value.length}/${LOCK_NOTE_MAX}`;
 };
 
-const showLockNotePopover = (tab, anchor) => {
+const showLockNotePopover = (tab) => {
   if (!tab) return;
   ensureLockNotePopover();
-  lockNotePopover.hidden = false;
-  lockNotePopover.setAttribute("aria-hidden", "false");
+  lockNoteOverlay.hidden = false;
+  lockNoteOverlay.classList.add("is-open");
+  lockNoteOverlay.setAttribute("aria-hidden", "false");
   updateLockNotePopoverContent(tab);
-  positionLockNotePopover(anchor);
   lockNotePopoverElements.input.focus();
   lockNotePopoverElements.input.setSelectionRange(
     lockNotePopoverElements.input.value.length,
@@ -567,8 +559,7 @@ const showLockNotePopover = (tab, anchor) => {
   clearLockPopoverListeners();
   lockPopoverListeners.outside = (event) => {
     if (
-      lockNotePopover.contains(event.target) ||
-      anchor?.contains(event.target)
+      lockNotePopover.contains(event.target)
     ) {
       return;
     }
@@ -1436,18 +1427,14 @@ const renderBentoGrid = () => `
         closeLockNoteEditor();
         updateTabLockState(tab.id, { isLocked: false, lockNote: "" });
       } else {
-        openLockNoteEditor(tab.id, "add", "lock-toggle");
+        openLockNoteEditor(tab.id, "add");
         updateTabLockState(tab.id, { isLocked: true, lockNote: "" });
       }
     });
   }
   
   if (tab?.id && lockNoteEditorState.isOpen && lockNoteEditorState.tabId === tab.id && isLocked) {
-    const anchorElement =
-      lockPopoverAnchor === "lock-toggle"
-        ? lockToggle
-        : lockEdit || lockToggle;
-    showLockNotePopover(tab, anchorElement);
+    showLockNotePopover(tab);
   }
     
   return panel;
@@ -1693,8 +1680,8 @@ const handleDocumentActionClick = (event) => {
     event.stopPropagation();
     const tab = tabs.find((item) => item.id === activeTabId);
     if (!tab || !tab.isLocked) return;
-    openLockNoteEditor(tab.id, "edit", "lock-edit");
-    showLockNotePopover(tab, actionTarget);
+    openLockNoteEditor(tab.id, "edit");
+    showLockNotePopover(tab);
     return;
   }
 
@@ -1703,7 +1690,7 @@ const handleDocumentActionClick = (event) => {
     handleSaveLockNote();
   }
 
-  if (action === "cancel-lock-note") {
+  if (action === "close-lock-note") {
     event.preventDefault();
     handleCancelLockNote();
   }
