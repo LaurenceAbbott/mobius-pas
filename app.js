@@ -52,7 +52,10 @@ const isMacPlatform =
   /Mac|iPhone|iPad|iPod/.test(navigator.platform) ||
   /Mac OS X/.test(navigator.userAgent);
 const shortcutPrefix = isMacPlatform ? "⌥" : "Alt+";
-const formatShortcutLabel = (key) => `${shortcutPrefix}${key}`;
+const formatShortcutLabel = (key, { shift = false } = {}) => {
+  const shiftLabel = shift ? (isMacPlatform ? "⇧" : "Shift+") : "";
+  return `${shortcutPrefix}${shiftLabel}${key}`;
+};
 
 const buildActionShortcuts = (actions, specs) =>
   actions.reduce((acc, action, index) => {
@@ -91,6 +94,15 @@ const clientShortcutSpecs = [
 ];
 const policyActionShortcuts = buildActionShortcuts(policyActions, policyShortcutSpecs);
 const clientActionShortcuts = buildActionShortcuts(clientActions, clientShortcutSpecs);
+const policySelectionShortcutSpecs = [
+  { key: "1", code: "Digit1", shift: true },
+  { key: "2", code: "Digit2", shift: true },
+  { key: "3", code: "Digit3", shift: true }
+];
+const policySelectionShortcuts = policySelectionShortcutSpecs.map((spec) => ({
+  ...spec,
+  label: formatShortcutLabel(spec.key, { shift: spec.shift })
+}));
 const backToClientShortcut = { key: "Escape", label: "Esc" };
 const policyActionByCode = Object.entries(policyActionShortcuts).reduce((acc, [action, data]) => {
   acc[data.code] = action;
@@ -98,6 +110,10 @@ const policyActionByCode = Object.entries(policyActionShortcuts).reduce((acc, [a
 }, {});
 const clientActionByCode = Object.entries(clientActionShortcuts).reduce((acc, [action, data]) => {
   acc[data.code] = action;
+  return acc;
+}, {});
+const policySelectionByCode = policySelectionShortcuts.reduce((acc, data, index) => {
+  acc[data.code] = index;
   return acc;
 }, {});
 
@@ -132,6 +148,36 @@ const policyNavIcons = {
   "Portal access": "fa-sharp fa-light fa-door-open",
   "Client checks": "fa-sharp fa-light fa-badge-check"
 };
+
+const normalizePolicyStatus = (policy) => {
+  const rawStatus = policy?.status;
+  if (rawStatus) {
+    const statusValue = rawStatus.toString().toLowerCase();
+    if (["lapsed", "cancelled", "expired"].includes(statusValue)) {
+      return "lapsed";
+    }
+    if (["live", "active"].includes(statusValue)) {
+      return "active";
+    }
+    return "active";
+  }
+  return "active";
+};
+
+const splitPoliciesByStatus = (policies = []) =>
+  policies.reduce(
+    (acc, policy) => {
+      if (!policy) return acc;
+      const status = normalizePolicyStatus(policy);
+      if (status === "lapsed") {
+        acc.lapsed.push(policy);
+      } else {
+        acc.active.push(policy);
+      }
+      return acc;
+    },
+    { active: [], lapsed: [] }
+  );
 
 const formatAddress = (address) => {
   if (!address) return "";
@@ -718,10 +764,7 @@ const renderBreadcrumbs = (tab) => {
   });
 };
 
-const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyView, onBack }) => {
-  const selectedPolicy = selectedPolicyId
-    ? getPolicyById(client, selectedPolicyId)
-    : null;
+const renderClientPanel = ({ client, selectedPolicy, isPolicyView }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack client-panel";
   if (isPolicyView) {
@@ -737,15 +780,14 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
           <div class="customer-card__identity-text">
             <h2 class="customer-card__name">${client.name}</h2>
             <span class="customer-card__email">${client.email}</span>
-            <span class="customer-card__since">Client since: ${client.personal?.clientSince || ""}</span>
             ${
-              isPolicyView
-                ? `<button class="client-back" type="button">
-                    Back to client summary
-                    <span class="shortcut-hint" aria-hidden="true">${backToClientShortcut.label}</span>
-                  </button>`
+              selectedPolicy
+                ? `<span class="customer-card__badge">Viewing: ${selectedPolicy.ref || "Policy"} · ${
+                    policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"
+                  }</span>`
                 : ""
             }
+            <span class="customer-card__since">Client since: ${client.personal?.clientSince || ""}</span>
           </div>
         </div>
         <details class="customer-card__actions-menu">
@@ -783,140 +825,14 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
         <span class="detail-text">${formatAddress(client.personal?.address)}</span>
       </div>
     </div>
-    <div class="client-panel__section">
-      <p class="menu-title">Policy list</p>
-      <div class="policy-dropdown${selectedPolicy ? " is-selected" : ""}" data-policy-dropdown>
-        <button class="policy-dropdown__trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-          ${
-            selectedPolicy
-              ? `
-                <span class="policy-dropdown__value">
-                  <span class="policy-dropdown__value-icon">
-                    <i class="${policyIconClasses[selectedPolicy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
-                  </span>
-                  <span class="policy-dropdown__value-text">
-                    <span class="policy-dropdown__value-ref">${selectedPolicy.ref || "Policy"}</span>
-                    <span class="policy-dropdown__value-type">${policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"}</span>
-                  </span>
-                </span>
-              `
-              : `<span class="policy-dropdown__placeholder">Select a policy</span>`
-          }
-          <i class="fa-sharp fa-light fa-chevron-down" aria-hidden="true"></i>
-        </button>
-        <div class="policy-dropdown__menu" role="listbox" tabindex="-1"></div>
-      </div>
-    </div>
   `;
-
-  if (isPolicyView) {
-    const backButton = panel.querySelector(".client-back");
-    if (backButton) {
-      backButton.addEventListener("click", () => onBack?.());
-    }
-  }
-
-  const dropdown = panel.querySelector("[data-policy-dropdown]");
-  const trigger = dropdown?.querySelector(".policy-dropdown__trigger");
-  const menu = dropdown?.querySelector(".policy-dropdown__menu");
-  let dropdownOpen = false;
-  let outsideHandler = null;
-
-  const closeDropdown = () => {
-    if (!dropdown || !trigger || !menu) return;
-    dropdownOpen = false;
-    dropdown.classList.remove("is-open");
-    trigger.setAttribute("aria-expanded", "false");
-    if (outsideHandler) {
-      document.removeEventListener("click", outsideHandler);
-      outsideHandler = null;
-    }
-  };
-
-  const openDropdown = () => {
-    if (!dropdown || !trigger || !menu) return;
-    dropdownOpen = true;
-    dropdown.classList.add("is-open");
-    trigger.setAttribute("aria-expanded", "true");
-    outsideHandler = (event) => {
-      if (!dropdown.contains(event.target)) {
-        closeDropdown();
-      }
-    };
-    document.addEventListener("click", outsideHandler);
-  };
-
-  if (trigger && menu) {
-    trigger.addEventListener("click", (event) => {
-      event.stopPropagation();
-      if (dropdownOpen) {
-        closeDropdown();
-      } else {
-        openDropdown();
-      }
-    });
-
-    trigger.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        closeDropdown();
-      }
-    });
-
-    menu.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        closeDropdown();
-        trigger.focus();
-      }
-    });
-  }
-
-  client.policies?.forEach((policy) => {
-    if (!policy) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "policy-dropdown__option";
-    if (policy.id === selectedPolicyId) {
-      button.classList.add("is-active");
-    }
-    button.dataset.policyId = policy.id;
-    button.setAttribute("role", "option");
-    button.innerHTML = `
-      <span class="policy-dropdown__option-left">
-        <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
-        <span class="policy-dropdown__option-text">
-          <span class="policy-dropdown__option-ref">${policy.ref || "Policy"}</span>
-          <span class="policy-dropdown__option-type">${policyTypeLabels[policy.type] || policy.type || "Policy"}</span>
-        </span>
-      </span>
-      <span class="policy-dropdown__option-meta">${policy.internalRef || ""}</span>
-    `;
-
-    button.addEventListener("click", () => {
-      if (onSelectPolicy) {
-        onSelectPolicy(policy.id);
-      }
-      closeDropdown();
-    });
-
-    menu?.appendChild(button);
-  });
-
   return panel;
 };
 
-const renderActionPanel = ({ title, actions, activeAction, onSelect, shortcutMap }) => {
-  const panel = document.createElement("div");
-  panel.className = "panel-card panel-card--stack action-panel";
-  panel.innerHTML = `
-    <div class="actions-panel">
-      <div class="menu-section">
-        <p class="menu-title">${title}</p>
-        <ul class="menu-list"></ul>
-      </div>
-    </div>
-  `;
+const renderActionList = ({ actions, activeAction, onSelect, shortcutMap }) => {
+  const menuList = document.createElement("ul");
+  menuList.className = "menu-list";
 
-  const menuList = panel.querySelector(".menu-list");
   actions.forEach((label) => {
     const listItem = document.createElement("li");
     const button = document.createElement("button");
@@ -942,6 +858,128 @@ const renderActionPanel = ({ title, actions, activeAction, onSelect, shortcutMap
     listItem.appendChild(button);
     menuList.appendChild(listItem);
   });
+
+  return menuList;
+};
+
+const renderNavigationPanel = ({ client, tab, policy }) => {
+  const panel = document.createElement("div");
+  panel.className = "panel-card panel-card--stack action-panel";
+
+  const actionShell = document.createElement("div");
+  actionShell.className = "actions-panel";
+  panel.appendChild(actionShell);
+
+  const isPolicyView = Boolean(policy);
+
+  if (isPolicyView) {
+    const backButton = document.createElement("button");
+    backButton.type = "button";
+    backButton.className = "menu-back";
+    backButton.setAttribute("aria-label", "Back to client summary");
+    backButton.innerHTML = `
+      <i class="fa-sharp fa-light fa-arrow-left" aria-hidden="true"></i>
+      <span>Back to client summary</span>
+      <span class="shortcut-hint" aria-hidden="true">${backToClientShortcut.label}</span>
+    `;
+    backButton.addEventListener("click", () => clearPolicySelection(tab.id));
+    actionShell.appendChild(backButton);
+
+    const policySection = document.createElement("div");
+    policySection.className = "menu-section";
+    policySection.innerHTML = `<p class="menu-title">Policy actions</p>`;
+    policySection.appendChild(
+      renderActionList({
+        actions: policyActions,
+        activeAction: tab.activePolicyAction,
+        onSelect: (action) => setPolicyAction(action),
+        shortcutMap: policyActionShortcuts
+      })
+    );
+    actionShell.appendChild(policySection);
+
+    return panel;
+  }
+
+  const clientSection = document.createElement("div");
+  clientSection.className = "menu-section";
+  clientSection.innerHTML = `<p class="menu-title">Client actions</p>`;
+  clientSection.appendChild(
+    renderActionList({
+      actions: clientActions,
+      activeAction: tab.activeClientAction,
+      onSelect: (action) => setClientAction(action),
+      shortcutMap: clientActionShortcuts
+    })
+  );
+  actionShell.appendChild(clientSection);
+
+  const policySection = document.createElement("div");
+  policySection.className = "menu-section";
+  policySection.innerHTML = `<p class="menu-title">Policies</p>`;
+
+  const { active, lapsed } = splitPoliciesByStatus(client.policies || []);
+  const activeShortcuts = active
+    .slice(0, policySelectionShortcuts.length)
+    .reduce((acc, policyItem, index) => {
+      acc[policyItem.id] = policySelectionShortcuts[index];
+      return acc;
+    }, {});
+
+  const buildPolicyGroup = (label, items, { showEmpty } = {}) => {
+    const group = document.createElement("div");
+    group.className = "policy-group";
+    group.innerHTML = `
+      <div class="policy-group__header">${label} (${items.length})</div>
+      <div class="policy-group__list"></div>
+    `;
+    const list = group.querySelector(".policy-group__list");
+    if (!items.length) {
+      if (showEmpty) {
+        const empty = document.createElement("div");
+        empty.className = "policy-group__empty";
+        empty.textContent = "None";
+        list.appendChild(empty);
+      }
+      return group;
+    }
+
+    items.forEach((policyItem) => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "policy-row";
+      if (policyItem.id === tab.selectedPolicyId) {
+        row.classList.add("is-active");
+      }
+      const isLapsed = normalizePolicyStatus(policyItem) === "lapsed";
+      const shortcutLabel = activeShortcuts[policyItem.id]?.label;
+      row.innerHTML = `
+        <span class="policy-row__icon">
+          <i class="${policyIconClasses[policyItem.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
+        </span>
+        <span class="policy-row__text">
+          <span class="policy-row__ref">${policyItem.ref || "Policy"}</span>
+          <span class="policy-row__type">${policyTypeLabels[policyItem.type] || policyItem.type || "Policy"}</span>
+        </span>
+        <span class="policy-row__meta">
+          ${isLapsed ? `<span class="policy-row__status">Lapsed</span>` : ""}
+          ${
+            shortcutLabel
+              ? `<span class="shortcut-hint" aria-hidden="true">${shortcutLabel}</span>`
+              : ""
+          }
+        </span>
+      `;
+
+      row.addEventListener("click", () => selectPolicyForTab(tab.id, policyItem.id));
+      list.appendChild(row);
+    });
+    return group;
+  };
+
+  policySection.appendChild(buildPolicyGroup("Active", active, { showEmpty: true }));
+  policySection.appendChild(buildPolicyGroup("Lapsed", lapsed, { showEmpty: true }));
+  actionShell.appendChild(policySection);
 
   return panel;
 };
@@ -1334,52 +1372,27 @@ const renderClientView = (tab) => {
   container.appendChild(
     renderClientPanel({
       client,
-      selectedPolicyId: tab.selectedPolicyId,
-      onSelectPolicy: (policyId) => selectPolicyForTab(tab.id, policyId),
-      isPolicyView: Boolean(selectedPolicy),
-      onBack: () => clearPolicySelection(tab.id)
+      selectedPolicy,
+      isPolicyView: Boolean(selectedPolicy)
     })
   );
 
-  if (selectedPolicy) {
-    container.appendChild(
-      renderActionPanel({
-        title: "Policy actions",
-        actions: policyActions,
-        activeAction: tab.activePolicyAction,
-        onSelect: (action) => setPolicyAction(action),
-        shortcutMap: policyActionShortcuts
-      })
-    );
+  container.appendChild(
+    renderNavigationPanel({
+      client,
+      tab,
+      policy: selectedPolicy
+    })
+  );
 
-    container.appendChild(
-      renderWorkArea({
-        client,
-        policy: selectedPolicy,
-        activeAction: tab.activePolicyAction,
-        tab
-      })
-    );
-  } else {
-    container.appendChild(
-      renderActionPanel({
-        title: "Client actions",
-        actions: clientActions,
-        activeAction: tab.activeClientAction,
-        onSelect: (action) => setClientAction(action),
-        shortcutMap: clientActionShortcuts
-      })
-    );
-
-    container.appendChild(
-      renderWorkArea({
-        client,
-        policy: null,
-        activeAction: tab.activeClientAction,
-        tab
-      })
-    );
-  }
+  container.appendChild(
+    renderWorkArea({
+      client,
+      policy: selectedPolicy,
+      activeAction: selectedPolicy ? tab.activePolicyAction : tab.activeClientAction,
+      tab
+    })
+  );
   
   workspaceContent.appendChild(container);
 };
@@ -1621,6 +1634,7 @@ const handleGlobalKeydown = (event) => {
   if (isEditableTarget(event.target)) return;
 
   const isAltOnly = event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
+  const isAltShiftOnly = event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey;
 
   if (isAltOnly) {
     if (key === "ArrowRight") {
@@ -1633,6 +1647,20 @@ const handleGlobalKeydown = (event) => {
       activatePreviousTab();
       return;
     }
+  }
+
+  if (isAltShiftOnly) {
+    const activeTab = tabs.find((tab) => tab.id === activeTabId);
+    if (!activeTab || activeTab.selectedPolicyId) return;
+    const client = getClientById(activeTab.dataRef.clientId);
+    const { active } = splitPoliciesByStatus(client?.policies || []);
+    const policyIndex = policySelectionByCode[keyCode];
+    const policy = policyIndex !== undefined ? active[policyIndex] : null;
+    if (policy) {
+      event.preventDefault();
+      selectPolicyForTab(activeTab.id, policy.id);
+    }
+    return;
   }
 
   if (!isAltOnly) return;
