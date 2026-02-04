@@ -1469,6 +1469,8 @@ span.search-result__name {
 .work-section {
   display: grid;
   gap: 12px;
+  align-items: start;
+  align-content: start;
 }
 
 .section-title {
@@ -1485,8 +1487,6 @@ span.search-result__name {
   display: grid;
   gap: 14px;
   align-content: start;
-  align-items: stretch;
-  justify-items: stretch;
 }
 
 .snapshot-card__header {
