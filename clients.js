@@ -4,6 +4,8 @@ const CLIENTS = {
 
     name: "Miss Katerina Danilovska",
     email: "k.danilovska@gmail.com",
+    aiSummary:
+      "Katerina has been a client since 12/12/2010 and holds Motor, Home, and Travel cover with us. No open claims are recorded and she is the primary driver on the motor policy. Next renewals are due 12/12/2025 (Motor) and 03/06/2025 (Home), with a single-trip travel policy for May 2025.",
 
     personal: {
       dob: "13/02/1996",
@@ -331,6 +333,8 @@ const CLIENTS = {
 
     name: "Mr Daniel Richardson",
     email: "daniel.richardson@outlook.com",
+    aiSummary:
+      "Daniel has been a client since 03/06/2015 and holds Motor, Home, and Travel cover. One open claim is recorded overall and his motor policy includes protected NCD. All live policies renew on 03/06/2025.",
 
     personal: {
       dob: "22/09/1984",
@@ -624,6 +628,8 @@ const CLIENTS = {
 
     name: "Mrs Helen Whitmore",
     email: "helen.whitmore@gmail.com",
+    aiSummary:
+      "Helen has been a client since 18/01/2008 and holds Motor, Home, and Travel cover. Two open claims are noted in the account summary, including a past motor claim and a home escape-of-water claim. Motor and Home renew on 18/01/2026, with a single-trip travel policy for October 2025.",
 
     personal: {
       dob: "08/11/1971",
