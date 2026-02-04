@@ -118,8 +118,8 @@ const getTabDisplay = (tab) => {
     const policy = getPolicyById(client, tab.selectedPolicyId);
     if (policy) {
       return {
-        title: policy.ref,
-        subtitle: `${policyTypeLabels[policy.type] || "Policy"} • ${client.name}`
+        title: `${policy.ref} · ${client.name}`,
+        subtitle: ""
       };
     }
   }
@@ -389,52 +389,13 @@ if (tabActions) {
   emptyState.className = "empty-state";
   emptyState.innerHTML = `
     <div class="empty-state__title">Start your work</div>
-    <div class="empty-state__hint">Search for a client or open a recent tab</div>
+    <div class="empty-state__hint">Search for a client or policy</div>
     <div class="empty-state__search" data-search-container></div>
-    <div class="empty-state__recent" data-recent-list></div>
   `;
        
   const searchContainer = emptyState.querySelector("[data-search-container]");
   if (searchContainer) {
     initSearchInterface(searchContainer, { mode: "empty" });
-  }
-
-  const recentList = emptyState.querySelector("[data-recent-list]");
-  const recentItems = recentTabs.slice(0, 3);
-
-    if (!recentList) {
-    workspaceContent.appendChild(emptyState);
-    return;
-  }
-
-
-  if (recentItems.length === 0) {
-    const emptyMessage = document.createElement("div");
-    emptyMessage.className = "panel-subtitle";
-    emptyMessage.textContent = "No recent tabs yet.";
-    recentList.appendChild(emptyMessage);
-  } else {
-    recentItems.forEach((item) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "recent-item";
-      const { title, subtitle } = getTabDisplay(item);
-      button.innerHTML = `
-        <span class="recent-item__meta">
-          <span class="recent-item__title">${title}</span>
-          ${subtitle ? `<span class="recent-item__subtitle">${subtitle}</span>` : ""}
-        </span>
-        <span class="policy-pill">${item.selectedPolicyId ? "Policy view" : "Client summary"}</span>
-      `;
-
-        button.addEventListener("click", () =>
-        openClientTab(item.dataRef.clientId, {
-          selectedPolicyId: item.selectedPolicyId || null
-        })
-      );
-
-       recentList.appendChild(button);
-    });
   }
 
   workspaceContent.appendChild(emptyState);
@@ -474,15 +435,20 @@ const resetClientSelection = (tabId) => {
   const tab = tabs.find((item) => item.id === tabId);
   if (!tab) return;
   tab.selectedPolicyId = null;
+  tab.activePolicyAction = "Risk";
+  tab.activeClientAction = "Summary";
   updateRecentTabs(tab);
   persistTabs();
   renderTabs();
   renderActiveView();
 };
 
-const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy }) => {
+const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyView, onBack }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack client-panel";
+  if (isPolicyView) {
+    panel.classList.add("client-panel--policy");
+  }
   panel.innerHTML = `
     <div class="customer-card">
       <div class="customer-card__header">
@@ -494,6 +460,7 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy }) => {
             <h2 class="customer-card__name">${client.name}</h2>
             <span class="customer-card__email">${client.email}</span>
             <span class="customer-card__since">Client since: ${client.personal?.clientSince || ""}</span>
+            ${isPolicyView ? `<button class="client-back" type="button">Back to client summary</button>` : ""}
           </div>
         </div>
         <details class="customer-card__actions-menu">
@@ -537,6 +504,13 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy }) => {
     </div>
   `;
 
+    if (isPolicyView) {
+    const backButton = panel.querySelector(".client-back");
+    if (backButton) {
+      backButton.addEventListener("click", () => onBack?.());
+    }
+  }
+
   const list = panel.querySelector("[data-policy-list]");
   client.policies?.forEach((policy) => {
     const button = document.createElement("button");
@@ -566,24 +540,19 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy }) => {
   return panel;
 };
 
-const renderActionPanel = ({ title, actions, activeAction, onSelect, backAction }) => {
+const renderActionPanel = ({ title, actions, activeAction, onSelect }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack action-panel";
   panel.innerHTML = `
     <div class="actions-panel">
       <div class="menu-section">
         <p class="menu-title">${title}</p>
-        ${backAction ? `<button class="menu-back" type="button">${backAction.label}</button>` : ""}
         <ul class="menu-list"></ul>
       </div>
     </div>
   `;
 
   const menuList = panel.querySelector(".menu-list");
-  const backButton = panel.querySelector(".menu-back");
-  if (backButton && backAction) {
-    backButton.addEventListener("click", backAction.onBack);
-  }
   actions.forEach((label) => {
     const listItem = document.createElement("li");
     const button = document.createElement("button");
@@ -845,7 +814,9 @@ const renderClientView = (tab) => {
     renderClientPanel({
       client,
       selectedPolicyId: tab.selectedPolicyId,
-      onSelectPolicy: (policyId) => setClientPolicySelection(tab.id, policyId)
+      onSelectPolicy: (policyId) => setClientPolicySelection(tab.id, policyId),
+      isPolicyView: Boolean(selectedPolicy),
+      onBack: () => resetClientSelection(tab.id)
     })
   );
 
@@ -855,11 +826,7 @@ const renderClientView = (tab) => {
         title: "Policy actions",
         actions: policyActions,
         activeAction: tab.activePolicyAction,
-        onSelect: (action) => setPolicyAction(tab.id, action),
-        backAction: {
-          label: "Back to client summary",
-          onBack: () => resetClientSelection(tab.id)
-        }
+        onSelect: (action) => setPolicyAction(tab.id, action)
       })
     );
 
