@@ -1320,7 +1320,7 @@ const renderClientSummary = (client) => {
       </div>
     </div>
     <div class="work-section">
-      <h2 class="section-title">Products overview</h2>
+      <h2 class="section-title">Policies overview</h2>
       <div class="mini-card-grid">
         ${productCards}
       </div>
