@@ -46,26 +46,56 @@ const policyActions = [
   "Claims"
 ];
 
-const buildFunctionKeyShortcuts = (actions, { shift = false } = {}) =>
+const isMacPlatform =
+  /Mac|iPhone|iPad|iPod/.test(navigator.platform) ||
+  /Mac OS X/.test(navigator.userAgent);
+const shortcutPrefix = isMacPlatform ? "⌘⇧" : "Ctrl+Shift+";
+const formatShortcutLabel = (key) => `${shortcutPrefix}${key}`;
+
+const buildActionShortcuts = (actions, specs) =>
   actions.reduce((acc, action, index) => {
-    const key = `F${index + 1}`;
+    const spec = specs[index];
+    if (!spec) return acc;
     acc[action] = {
-      key,
-      shift,
-      label: shift ? `Shift+${key}` : key
+      key: spec.key,
+      code: spec.code,
+      label: formatShortcutLabel(spec.key)
     };
     return acc;
   }, {});
 
-const policyActionShortcuts = buildFunctionKeyShortcuts(policyActions);
-const clientActionShortcuts = buildFunctionKeyShortcuts(clientActions, { shift: true });
+const policyShortcutSpecs = [
+  { key: "1", code: "Digit1" },
+  { key: "2", code: "Digit2" },
+  { key: "3", code: "Digit3" },
+  { key: "4", code: "Digit4" },
+  { key: "5", code: "Digit5" },
+  { key: "6", code: "Digit6" },
+  { key: "7", code: "Digit7" },
+  { key: "8", code: "Digit8" },
+  { key: "9", code: "Digit9" },
+  { key: "0", code: "Digit0" },
+  { key: "-", code: "Minus" }
+];
+const clientShortcutSpecs = [
+  { key: "1", code: "Digit1" },
+  { key: "2", code: "Digit2" },
+  { key: "3", code: "Digit3" },
+  { key: "4", code: "Digit4" },
+  { key: "5", code: "Digit5" },
+  { key: "6", code: "Digit6" },
+  { key: "7", code: "Digit7" },
+  { key: "8", code: "Digit8" }
+];
+const policyActionShortcuts = buildActionShortcuts(policyActions, policyShortcutSpecs);
+const clientActionShortcuts = buildActionShortcuts(clientActions, clientShortcutSpecs);
 const backToClientShortcut = { key: "Escape", label: "Esc" };
-const policyActionByKey = Object.entries(policyActionShortcuts).reduce((acc, [action, data]) => {
-  acc[data.key] = action;
+const policyActionByCode = Object.entries(policyActionShortcuts).reduce((acc, [action, data]) => {
+  acc[data.code] = action;
   return acc;
 }, {});
-const clientActionByKey = Object.entries(clientActionShortcuts).reduce((acc, [action, data]) => {
-  acc[data.key] = action;
+const clientActionByCode = Object.entries(clientActionShortcuts).reduce((acc, [action, data]) => {
+  acc[data.code] = action;
   return acc;
 }, {});
 
@@ -1337,6 +1367,7 @@ const isEditableTarget = (target) => {
 const handleGlobalKeydown = (event) => {
   const key = event.key;
   const keyLower = key.toLowerCase();
+  const keyCode = event.code;
 
   if (keyLower === "k" && (event.ctrlKey || event.metaKey)) {
     event.preventDefault();
@@ -1350,6 +1381,7 @@ const handleGlobalKeydown = (event) => {
       closeSearchOverlay();
       return;
     }
+    if (isEditableTarget(event.target)) return;
     const activeTab = tabs.find((tab) => tab.id === activeTabId);
     if (activeTab?.selectedPolicyId) {
       event.preventDefault();
@@ -1361,17 +1393,7 @@ const handleGlobalKeydown = (event) => {
   if (overlayIsOpen) return;
   if (isEditableTarget(event.target)) return;
 
-  if (event.ctrlKey && key === "Tab") {
-    event.preventDefault();
-    if (event.shiftKey) {
-      activatePreviousTab();
-    } else {
-      activateNextTab();
-    }
-    return;
-  }
-
-  if (event.metaKey && event.altKey && !event.ctrlKey) {
+  if (event.shiftKey && (event.ctrlKey || event.metaKey) && !event.altKey) {
     if (key === "ArrowRight") {
       event.preventDefault();
       activateNextTab();
@@ -1384,26 +1406,25 @@ const handleGlobalKeydown = (event) => {
     }
   }
 
-  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  const isActionCombo = event.shiftKey && (event.ctrlKey || event.metaKey) && !event.altKey;
+  if (!isActionCombo) return;
 
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
   if (!activeTab) return;
 
   if (activeTab.selectedPolicyId) {
-    const policyAction = policyActionByKey[key];
-    if (policyAction && !event.shiftKey) {
+    const policyAction = policyActionByCode[keyCode];
+    if (policyAction) {
       event.preventDefault();
       setPolicyAction(policyAction);
     }
     return;
   }
 
-  if (!activeTab.selectedPolicyId && event.shiftKey) {
-    const clientAction = clientActionByKey[key];
-    if (clientAction) {
-      event.preventDefault();
-      setClientAction(clientAction);
-    }
+  const clientAction = clientActionByCode[keyCode];
+  if (clientAction) {
+    event.preventDefault();
+    setClientAction(clientAction);
   }
 };
 
