@@ -712,6 +712,116 @@ span.search-result__name {
   outline: none;
 }
 
+.policy-select {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--light-gray);
+}
+
+.policy-select__summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.policy-select__summary::-webkit-details-marker {
+  display: none;
+}
+
+.policy-select__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--white);
+  color: var(--dark-gray);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.policy-select__text {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+}
+
+.policy-select__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--dark-gray);
+}
+
+.policy-select__meta {
+  font-size: 0.75rem;
+  color: var(--mid-gray);
+}
+
+.policy-select__list {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--white);
+  border-radius: 0 0 12px 12px;
+}
+
+.policy-select__option {
+  border: 1px solid transparent;
+  background: var(--white);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.policy-select__option:hover,
+.policy-select__option:focus-visible {
+  outline: none;
+  background: var(--light-gray);
+  border-color: var(--border);
+}
+
+.policy-select__option.is-active {
+  background: var(--light-gray);
+  border-color: var(--links);
+}
+
+.policy-select__option-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--light-gray);
+  color: var(--dark-gray);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.policy-select__option-text {
+  display: grid;
+  gap: 4px;
+}
+
+.policy-select__option-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--dark-gray);
+}
+
+.policy-select__option-meta {
+  font-size: 0.75rem;
+  color: var(--mid-gray);
+}
+
 .menu-list {
   list-style: none;
   display: grid;
