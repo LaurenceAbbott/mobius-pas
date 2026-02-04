@@ -701,6 +701,11 @@ span.search-result__name {
   margin-bottom: 8px;
 }
 
+.menu-divider {
+  width: 100%;
+  border-top: 1px solid var(--border);
+}
+
 .menu-back {
   border: none;
   background: transparent;
