@@ -1182,11 +1182,12 @@ span.search-result__name {
 
 .customer-card__details {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 8px;
   width: 100%;
   margin-top: 16px;
+  flex-direction: column;
 }
 
 .customer-card__detail {
@@ -1195,10 +1196,6 @@ span.search-result__name {
   gap: 12px;
   font-size: .875rem;
   color: var(--dark-gray);
-}
-
-.customer-card__detail--address {
-  flex: 1 1 420px;
 }
 
 .detail-icon {
