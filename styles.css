@@ -711,6 +711,12 @@ span.search-result__name {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--light-gray);
+  position: relative;
+  z-index: 2;
+}
+
+.policy-select[open] {
+  border-color: var(--links);
 }
 
 .policy-select__summary {
@@ -759,9 +765,14 @@ span.search-result__name {
   display: grid;
   gap: 8px;
   padding: 12px 14px 14px;
-  border-top: 1px solid var(--border);
   background: var(--white);
-  border-radius: 0 0 12px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  box-shadow: 0 12px 24px rgba(15, 15, 15, 0.12);
 }
 
 .policy-select__option {
