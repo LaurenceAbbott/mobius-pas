@@ -1160,6 +1160,11 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
   );
   actionShell.appendChild(clientSection);
 
+  const menuDivider = document.createElement("div");
+  menuDivider.className = "menu-divider";
+  menuDivider.setAttribute("role", "separator");
+  actionShell.appendChild(menuDivider);
+
   const policySection = document.createElement("div");
   policySection.className = "menu-section";
   policySection.innerHTML = `<p class="menu-title">Policies</p>`;
