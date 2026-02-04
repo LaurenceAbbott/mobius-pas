@@ -729,6 +729,10 @@ span.search-result__name {
   z-index: 2;
 }
 
+.policy-select.is-selected {
+  border-color: var(--links);
+}
+
 .policy-select[open] {
   border-color: var(--links);
 }
