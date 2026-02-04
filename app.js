@@ -764,6 +764,7 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
   }
 
   client.policies?.forEach((policy) => {
+    if (!policy) return;
     const button = document.createElement("button");
     button.type = "button";
     button.className = "policy-dropdown__option";
@@ -777,7 +778,7 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
         <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
         <span class="policy-dropdown__option-text">
           <span class="policy-dropdown__option-ref">${policy.ref || "Policy"}</span>
-          <span class="policy-dropdown__option-type">${policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"}</span>
+          <span class="policy-dropdown__option-type">${policyTypeLabels[policy.type] || policy.type || "Policy"}</span>
         </span>
       </span>
       <span class="policy-dropdown__option-meta">${policy.internalRef || ""}</span>
