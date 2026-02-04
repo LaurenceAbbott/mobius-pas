@@ -1291,6 +1291,13 @@ span.search-result__name {
   position: relative;
 }
 
+.work-header__divider {
+  width: 1px;
+  height: 24px;
+  background: #e3e7ee;
+  margin: 0 16px;
+}
+
 .work-header__icon-button {
   border: 1px solid var(--border);
   background: var(--white);
