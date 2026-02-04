@@ -1081,6 +1081,7 @@ span.search-result__name {
   font-size: 0.85rem;
   color: var(--mid-gray);
   width: fit-content;
+  display: none;
 }
 
 @media (max-width: 900px) {
