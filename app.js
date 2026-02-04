@@ -3,6 +3,7 @@ const workspaceContent = document.querySelector("#workspaceContent");
 const searchToggle = document.querySelector("#searchToggle");
 const searchOverlay = document.querySelector("#searchOverlay");
 const tabActions = document.querySelector("#tabActions");
+const breadcrumbBar = document.querySelector("#breadcrumbBar");
 
 const clients = window.CLIENTS || {};
 
@@ -97,6 +98,8 @@ const buildClientTab = (clientId, { selectedPolicyId = null } = {}) => {
   const client = getClientById(clientId);
   if (!client) return null;
 
+  const policyActionByPolicyId = selectedPolicyId ? { [selectedPolicyId]: "Risk" } : {};
+
   return {
     id: createTabId(clientId),
     type: "client",
@@ -104,7 +107,9 @@ const buildClientTab = (clientId, { selectedPolicyId = null } = {}) => {
     dataRef: { clientId },
     activeClientAction: "Summary",
     activePolicyAction: "Risk",
-    selectedPolicyId
+    selectedPolicyId,
+    lastSelectedPolicyId: selectedPolicyId,
+    policyActionByPolicyId
   };
 };
 
@@ -142,15 +147,22 @@ const normalizeStoredTab = (tab) => {
     tab?.selectedPolicyId ??
     (tab?.type === "policy" ? policyId : null) ??
     null;
-
+ const policyActionByPolicyId =
+    tab?.policyActionByPolicyId && typeof tab.policyActionByPolicyId === "object"
+      ? tab.policyActionByPolicyId
+      : {};
+  const storedPolicyAction = selectedPolicyId ? policyActionByPolicyId[selectedPolicyId] : null;
+  
   return {
     id: createTabId(clientId),
     type: "client",
     pinned: Boolean(tab?.pinned),
     dataRef: { clientId },
     activeClientAction: tab?.activeClientAction || "Summary",
-    activePolicyAction: tab?.activePolicyAction || "Risk",
-    selectedPolicyId
+    activePolicyAction: tab?.activePolicyAction || storedPolicyAction || "Risk",
+    selectedPolicyId,
+    lastSelectedPolicyId: tab?.lastSelectedPolicyId ?? selectedPolicyId,
+    policyActionByPolicyId
   };
 };
 
@@ -209,6 +221,11 @@ const restoreTabs = () => {
       existing.pinned = existing.pinned || tab.pinned;
       existing.activeClientAction = existing.activeClientAction || tab.activeClientAction;
       existing.activePolicyAction = existing.activePolicyAction || tab.activePolicyAction;
+      existing.lastSelectedPolicyId = existing.lastSelectedPolicyId || tab.lastSelectedPolicyId;
+      existing.policyActionByPolicyId = {
+        ...tab.policyActionByPolicyId,
+        ...existing.policyActionByPolicyId
+      };
       if (!existing.selectedPolicyId && tab.selectedPolicyId) {
         existing.selectedPolicyId = tab.selectedPolicyId;
       }
@@ -256,23 +273,24 @@ const setActiveTab = (tabId) => {
   renderActiveView();
 };
 
-const openClientTab = (clientId, { selectedPolicyId = null } = {}) => {
+const openClientTab = (clientId, { selectedPolicyId } = {}) => {
   const existingTab = tabs.find((tab) => tab.dataRef.clientId === clientId);
   
   if (existingTab) {
     if (selectedPolicyId !== undefined) {
+      setActiveTab(existingTab.id);
       if (selectedPolicyId === null) {
-        existingTab.selectedPolicyId = null;
-      } else if (existingTab.selectedPolicyId !== selectedPolicyId) {
-        existingTab.selectedPolicyId = selectedPolicyId;
-        existingTab.activePolicyAction = "Risk";
+        clearPolicySelection(existingTab.id);
+        return;
       }
+      selectPolicyForTab(existingTab.id, selectedPolicyId);
+      return;
     }
     setActiveTab(existingTab.id);
     return;
   }
 
- const newTab = buildClientTab(clientId, { selectedPolicyId });
+  const newTab = buildClientTab(clientId, { selectedPolicyId: selectedPolicyId ?? null });
   if (!newTab) return;
 
   tabs.push(newTab);
@@ -385,7 +403,11 @@ if (tabActions) {
     const renderEmptyState = () => {
   if (!workspaceContent) return;
   workspaceContent.innerHTML = "";
-
+if (breadcrumbBar) {
+    breadcrumbBar.classList.add("is-hidden");
+    breadcrumbBar.innerHTML = "";
+  }
+      
       const emptyState = document.createElement("div");
   emptyState.className = "empty-state";
   emptyState.innerHTML = `
@@ -414,17 +436,31 @@ const setClientAction = (tabId, action) => {
   const tab = tabs.find((item) => item.id === tabId);
   if (!tab) return;
   tab.activePolicyAction = action;
+      if (!tab.policyActionByPolicyId || typeof tab.policyActionByPolicyId !== "object") {
+    tab.policyActionByPolicyId = {};
+  }
+  if (tab.selectedPolicyId) {
+    tab.policyActionByPolicyId[tab.selectedPolicyId] = action;
+  }
   persistTabs();
   renderActiveView();
 };
 
-const setClientPolicySelection = (tabId, policyId) => {
+const selectPolicyForTab = (tabId, policyId) => {
   const tab = tabs.find((item) => item.id === tabId);
   if (!tab) return;
+  if (!tab.policyActionByPolicyId || typeof tab.policyActionByPolicyId !== "object") {
+    tab.policyActionByPolicyId = {};
+  }
   const policyChanged = tab.selectedPolicyId !== policyId;
+  if (policyChanged && tab.selectedPolicyId) {
+    tab.lastSelectedPolicyId = tab.selectedPolicyId;
+  }
   tab.selectedPolicyId = policyId;
-  if (policyChanged) {
-    tab.activePolicyAction = "Risk";
+   const storedAction = tab.policyActionByPolicyId[policyId];
+  tab.activePolicyAction = storedAction || "Risk";
+  if (!tab.policyActionByPolicyId[policyId]) {
+    tab.policyActionByPolicyId[policyId] = tab.activePolicyAction;
   }
   updateRecentTabs(tab);
   persistTabs();
@@ -432,16 +468,91 @@ const setClientPolicySelection = (tabId, policyId) => {
   renderActiveView();
 };
 
-const resetClientSelection = (tabId) => {
+const clearPolicySelection = (tabId) => {
   const tab = tabs.find((item) => item.id === tabId);
   if (!tab) return;
+  if (tab.selectedPolicyId) {
+    tab.lastSelectedPolicyId = tab.selectedPolicyId;
+  }
   tab.selectedPolicyId = null;
-  tab.activePolicyAction = "Risk";
-  tab.activeClientAction = "Summary";
   updateRecentTabs(tab);
   persistTabs();
   renderTabs();
   renderActiveView();
+};
+
+const getTopNavLabel = () => {
+  const navLabel = document.querySelector(".header-nav .nav-link--active");
+  return navLabel?.textContent?.trim() || "Quotes and policies";
+};
+
+const renderBreadcrumbs = (tab) => {
+  if (!breadcrumbBar) return;
+  if (!tab) {
+    breadcrumbBar.classList.add("is-hidden");
+    breadcrumbBar.innerHTML = "";
+    return;
+  }
+
+  const client = getClientById(tab.dataRef.clientId);
+  if (!client) return;
+
+  const topLabel = getTopNavLabel();
+  const selectedPolicy = tab.selectedPolicyId
+    ? getPolicyById(client, tab.selectedPolicyId)
+    : null;
+  const policyLabel = selectedPolicy
+    ? `${selectedPolicy.ref || "Policy"} (${policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"})`
+    : "";
+  const sectionLabel = selectedPolicy ? tab.activePolicyAction : tab.activeClientAction;
+
+  const crumbs = [
+    {
+      label: topLabel,
+      onClick: () => clearPolicySelection(tab.id)
+    },
+    {
+      label: client.name,
+      onClick: () => clearPolicySelection(tab.id)
+    }
+  ];
+
+  if (selectedPolicy) {
+    crumbs.push({
+      label: policyLabel,
+      onClick: () => selectPolicyForTab(tab.id, selectedPolicy.id)
+    });
+  }
+
+  crumbs.push({ label: sectionLabel });
+
+  breadcrumbBar.innerHTML = "";
+  breadcrumbBar.classList.remove("is-hidden");
+
+  crumbs.forEach((crumb, index) => {
+    const isLast = index === crumbs.length - 1;
+    const item = document.createElement(crumb.onClick && !isLast ? "button" : "span");
+    item.className = "breadcrumb-bar__item";
+    if (isLast) {
+      item.classList.add("breadcrumb-bar__item--current");
+    }
+    if (crumb.onClick && !isLast) {
+      item.type = "button";
+      item.classList.add("breadcrumb-bar__button");
+      item.addEventListener("click", (event) => {
+        event.preventDefault();
+        crumb.onClick?.();
+      });
+    }
+    item.textContent = crumb.label;
+    breadcrumbBar.appendChild(item);
+    if (!isLast) {
+      const separator = document.createElement("span");
+      separator.className = "breadcrumb-bar__separator";
+      separator.textContent = "/";
+      breadcrumbBar.appendChild(separator);
+    }
+  });
 };
 
 const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyView, onBack }) => {
@@ -504,14 +615,19 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
     </div>
     <div class="client-panel__section">
       <p class="menu-title">Policy list</p>
-      <div class="policy-dropdown" data-policy-dropdown>
+      <div class="policy-dropdown${selectedPolicy ? " is-selected" : ""}" data-policy-dropdown>
         <button class="policy-dropdown__trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
           ${
             selectedPolicy
               ? `
                 <span class="policy-dropdown__value">
-                  <span class="policy-dropdown__value-ref">${selectedPolicy.ref || "Policy"}</span>
-                  <span class="policy-dropdown__value-type">${policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"}</span>
+                  <span class="policy-dropdown__value-icon">
+                    <i class="${policyIconClasses[selectedPolicy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
+                  </span>
+                  <span class="policy-dropdown__value-text">
+                    <span class="policy-dropdown__value-ref">${selectedPolicy.ref || "Policy"}</span>
+                    <span class="policy-dropdown__value-type">${policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"}</span>
+                  </span>
                 </span>
               `
               : `<span class="policy-dropdown__placeholder">Select a policy</span>`
@@ -891,9 +1007,9 @@ const renderClientView = (tab) => {
     renderClientPanel({
       client,
       selectedPolicyId: tab.selectedPolicyId,
-      onSelectPolicy: (policyId) => setClientPolicySelection(tab.id, policyId),
+      onSelectPolicy: (policyId) => selectPolicyForTab(tab.id, policyId),
       isPolicyView: Boolean(selectedPolicy),
-      onBack: () => resetClientSelection(tab.id)
+      onBack: () => clearPolicySelection(tab.id)
     })
   );
 
@@ -947,6 +1063,7 @@ const renderActiveView = () => {
   }
 
   renderClientView(activeTab);
+  renderBreadcrumbs(activeTab);
 };
 
 let overlaySearchUI = null;
