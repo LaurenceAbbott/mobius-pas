@@ -972,6 +972,7 @@ const renderBreadcrumbs = (tab) => {
 const renderClientPanel = ({ client }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack client-panel";
+  const aiSummary = client.aiSummary || "No AI summary available.";
   panel.innerHTML = `
     <div class="customer-card">
       <div class="customer-card__header">
@@ -1004,6 +1005,10 @@ const renderClientPanel = ({ client }) => {
             </button>
           </div>
         </details>
+      </div>
+      <div class="customer-card__ai-summary">
+        <span class="customer-card__ai-icon" aria-hidden="true">✨</span>
+        <p class="customer-card__ai-text">${aiSummary}</p>
       </div>
     </div>
      <div class="customer-card__details">
