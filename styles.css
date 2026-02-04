@@ -1484,6 +1484,9 @@ span.search-result__name {
   background: var(--light-gray);
   display: grid;
   gap: 14px;
+  align-content: start;
+  align-items: start;
+  justify-items: start;
 }
 
 .snapshot-card__header {
@@ -1600,6 +1603,9 @@ span.search-result__name {
   background: var(--light-gray);
   display: grid;
   gap: 10px;
+  align-content: start;
+  align-items: start;
+  justify-items: start;
   align-content: start;
   align-items: start;
   justify-items: start;
