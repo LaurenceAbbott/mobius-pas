@@ -969,12 +969,9 @@ const renderBreadcrumbs = (tab) => {
   });
 };
 
-const renderClientPanel = ({ client, selectedPolicy, isPolicyView }) => {
+const renderClientPanel = ({ client }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack client-panel";
-  if (isPolicyView) {
-    panel.classList.add("client-panel--policy");
-  }
   panel.innerHTML = `
     <div class="customer-card">
       <div class="customer-card__header">
@@ -985,13 +982,6 @@ const renderClientPanel = ({ client, selectedPolicy, isPolicyView }) => {
           <div class="customer-card__identity-text">
             <h2 class="customer-card__name">${client.name}</h2>
             <span class="customer-card__email">${client.email}</span>
-            ${
-              selectedPolicy
-                ? `<span class="customer-card__badge">Viewing: ${selectedPolicy.ref || "Policy"} · ${
-                    policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"
-                  }</span>`
-                : ""
-            }
             <span class="customer-card__since">Client since: ${client.personal?.clientSince || ""}</span>
           </div>
         </div>
@@ -1504,9 +1494,7 @@ const renderClientView = (tab) => {
 
   container.appendChild(
     renderClientPanel({
-      client,
-      selectedPolicy,
-      isPolicyView: Boolean(selectedPolicy)
+      client
     })
   );
 
