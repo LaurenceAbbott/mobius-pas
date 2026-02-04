@@ -902,6 +902,11 @@ span.search-result__name {
   color: var(--mid-gray);
 }
 
+.policy-row__internal-ref {
+  font-size: 0.75rem;
+  color: var(--mid-gray);
+}
+
 .policy-row__meta {
   display: inline-flex;
   align-items: center;
