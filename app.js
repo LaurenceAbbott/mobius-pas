@@ -1071,10 +1071,10 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
     const backButton = document.createElement("button");
     backButton.type = "button";
     backButton.className = "menu-back";
-    backButton.setAttribute("aria-label", "Back to client summary");
+    backButton.setAttribute("aria-label", "Back to client");
     backButton.innerHTML = `
       <i class="fa-sharp fa-light fa-arrow-left" aria-hidden="true"></i>
-      <span>Back to client summary</span>
+      <span>Back to client</span>
       <span class="shortcut-hint" aria-hidden="true">${backToClientShortcut.label}</span>
     `;
     backButton.addEventListener("click", () => clearPolicySelection(tab.id));
@@ -1144,7 +1144,7 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
 
   const clientSection = document.createElement("div");
   clientSection.className = "menu-section";
-  clientSection.innerHTML = `<p class="menu-title">Client actions</p>`;
+  clientSection.innerHTML = `<p class="menu-title">Client</p>`;
   clientSection.appendChild(
     renderActionList({
       actions: clientActions,
