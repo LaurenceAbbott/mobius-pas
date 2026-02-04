@@ -1091,7 +1091,7 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
           <span class="policy-select__name">${policy.ref || "Policy"}</span>
           <span class="policy-select__meta">
             ${policyTypeLabels[policy.type] || policy.type || "Policy"}
-            ${policy.internalRef ? ` • ${policy.internalRef}` : ""}
+            ${policy.internalRef ? ` ${policy.internalRef}` : ""}
           </span>
         </span>
         <i class="fa-sharp fa-light fa-chevron-down" aria-hidden="true"></i>
@@ -1114,7 +1114,7 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
           <span class="policy-select__option-name">${policyItem.ref || "Policy"}</span>
           <span class="policy-select__option-meta">
             ${policyTypeLabels[policyItem.type] || policyItem.type || "Policy"}
-            ${policyItem.internalRef ? ` • ${policyItem.internalRef}` : ""}
+            ${policyItem.internalRef ? ` ${policyItem.internalRef}` : ""}
           </span>
         </span>
       `;
