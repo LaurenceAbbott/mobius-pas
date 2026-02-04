@@ -1430,6 +1430,7 @@ span.search-result__name {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  align-content: start;
 }
 
 .client-panel,
