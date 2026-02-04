@@ -20,6 +20,7 @@ const clientIndex = clientList.reduce((acc, client) => {
 let tabs = [];
 let activeTabId = null;
 let recentTabs = [];
+let lockNoteEditorState = { tabId: null, isOpen: false, mode: "add" };
 
 const clientActions = [
   "Summary",
@@ -157,6 +158,8 @@ const buildClientTab = (clientId, { selectedPolicyId = null } = {}) => {
     id: createTabId(clientId),
     type: "client",
     pinned: false,
+    isLocked: false,
+    lockNote: "",
     dataRef: { clientId },
     activeClientAction: "Summary",
     activePolicyAction: "Risk",
@@ -192,6 +195,11 @@ const persistTabs = () => {
   localStorage.setItem(RECENT_TAB_STORAGE_KEY, JSON.stringify(recentTabs));
 };
 
+const normalizeLockNote = (note) => {
+  if (typeof note !== "string") return "";
+  return note.trim().slice(0, 40);
+};
+
 const normalizeStoredTab = (tab) => {
   const clientId = tab?.dataRef?.clientId ?? tab?.dataRef?.customerId ?? tab?.clientId ?? tab?.customerId;
   if (!clientId) return null;
@@ -200,7 +208,7 @@ const normalizeStoredTab = (tab) => {
     tab?.selectedPolicyId ??
     (tab?.type === "policy" ? policyId : null) ??
     null;
- const policyActionByPolicyId =
+  const policyActionByPolicyId =
     tab?.policyActionByPolicyId && typeof tab.policyActionByPolicyId === "object"
       ? tab.policyActionByPolicyId
       : {};
@@ -210,6 +218,8 @@ const normalizeStoredTab = (tab) => {
     id: createTabId(clientId),
     type: "client",
     pinned: Boolean(tab?.pinned),
+    isLocked: Boolean(tab?.isLocked),
+    lockNote: normalizeLockNote(tab?.lockNote),
     dataRef: { clientId },
     activeClientAction: tab?.activeClientAction || "Summary",
     activePolicyAction: tab?.activePolicyAction || storedPolicyAction || "Risk",
@@ -272,6 +282,10 @@ const restoreTabs = () => {
         return;
       }
       existing.pinned = existing.pinned || tab.pinned;
+      existing.isLocked = existing.isLocked || tab.isLocked;
+      if (!existing.lockNote && tab.lockNote) {
+        existing.lockNote = tab.lockNote;
+      }
       existing.activeClientAction = existing.activeClientAction || tab.activeClientAction;
       existing.activePolicyAction = existing.activePolicyAction || tab.activePolicyAction;
       existing.lastSelectedPolicyId = existing.lastSelectedPolicyId || tab.lastSelectedPolicyId;
@@ -317,10 +331,38 @@ const updateRecentTabs = (tab) => {
   recentTabs = [tab, ...recentTabs.filter((item) => item.id !== tab.id)].slice(0, 6);
 };
 
+const closeLockNoteEditor = () => {
+  lockNoteEditorState = { tabId: null, isOpen: false, mode: "add" };
+};
+
+const openLockNoteEditor = (tabId, mode = "add") => {
+  lockNoteEditorState = { tabId, isOpen: true, mode };
+};
+
+const updateTabLockState = (tabId, { isLocked, lockNote }) => {
+  const tab = tabs.find((item) => item.id === tabId);
+  if (!tab) return;
+  if (typeof isLocked === "boolean") {
+    tab.isLocked = isLocked;
+  }
+  if (lockNote !== undefined) {
+    tab.lockNote = normalizeLockNote(lockNote);
+  }
+  if (!tab.isLocked) {
+    tab.lockNote = "";
+  }
+  persistTabs();
+  renderTabs();
+  renderActiveView();
+};
+
 const setActiveTab = (tabId) => {
   activeTabId = tabId;
   const tab = tabs.find((item) => item.id === tabId);
   updateRecentTabs(tab);
+  if (lockNoteEditorState.tabId !== tabId) {
+    closeLockNoteEditor();
+  }
   persistTabs();
   renderTabs();
   renderActiveView();
@@ -404,14 +446,33 @@ const renderTabs = () => {
     if (tab.pinned) {
       tabElement.classList.add("tab--pinned");
     }
-
+    if (tab.isLocked) {
+      tabElement.classList.add("tab--locked");
+    }
+    
     const meta = document.createElement("div");
     meta.className = "tab__meta";
     const { title, subtitle } = getTabDisplay(tab);
-    meta.innerHTML = `
-      <span class="tab__title">${title}</span>
-      ${subtitle ? `<span class="tab__subtitle">${subtitle}</span>` : ""}
-    `;
+    const titleRow = document.createElement("div");
+    titleRow.className = "tab__title-row";
+    if (tab.isLocked) {
+      const lockIcon = document.createElement("span");
+      lockIcon.className = "tab__lock";
+      lockIcon.innerHTML = `<i class="fa-sharp fa-light fa-lock" aria-hidden="true"></i>`;
+      lockIcon.setAttribute("title", "Locked tab");
+      titleRow.appendChild(lockIcon);
+    }
+    const titleText = document.createElement("span");
+    titleText.className = "tab__title";
+    titleText.textContent = title;
+    titleRow.appendChild(titleText);
+    meta.appendChild(titleRow);
+    if (subtitle) {
+      const subtitleText = document.createElement("span");
+      subtitleText.className = "tab__subtitle";
+      subtitleText.textContent = subtitle;
+      meta.appendChild(subtitleText);
+    }
 
     const pinButton = document.createElement("button");
     pinButton.type = "button";
@@ -445,7 +506,15 @@ const renderTabs = () => {
       }
     });
 
-    tabElement.append(meta, pinButton, closeButton);
+    if (tab.isLocked && tab.lockNote) {
+      const notePill = document.createElement("span");
+      notePill.className = "tab__note";
+      notePill.textContent = tab.lockNote;
+      notePill.setAttribute("title", tab.lockNote);
+      tabElement.append(meta, notePill, pinButton, closeButton);
+    } else {
+      tabElement.append(meta, pinButton, closeButton);
+    }
     tabBar.appendChild(tabElement);
   });
 if (tabActions) {
@@ -1063,7 +1132,7 @@ const renderBentoGrid = () => `
   </div>
 `;
 
-const renderWorkArea = ({ client, policy, activeAction }) => {
+  const renderWorkArea = ({ client, policy, activeAction, tab }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack work-panel";
   const isPolicyView = Boolean(policy);
@@ -1071,7 +1140,16 @@ const renderWorkArea = ({ client, policy, activeAction }) => {
   const subheader = isPolicyView
     ? `${policy.ref} • ${policyTypeLabels[policy.type] || policy.type} • ${client.name}`
     : `${client.name}${client.email ? ` • ${client.email}` : ""}`;
-
+const isLocked = Boolean(tab?.isLocked);
+  const lockNote = tab?.lockNote || "";
+  const editorVisible = Boolean(
+    tab?.id &&
+      lockNoteEditorState.isOpen &&
+      lockNoteEditorState.tabId === tab.id &&
+      isLocked
+  );
+  const isEditMode = lockNoteEditorState.mode === "edit";
+    
   let content = renderBentoGrid();
   if (!isPolicyView && activeAction === "Summary") {
     content = renderClientSummary(client);
@@ -1083,9 +1161,36 @@ const renderWorkArea = ({ client, policy, activeAction }) => {
   panel.innerHTML = `
     <div class="work-area">
       <div class="work-header">
-        <div>
+        <div class="work-header__titles">
           <h1>${headerTitle}</h1>
           <p class="work-subheader">${subheader}</p>
+        </div>
+        <div class="work-header__actions">
+          <button type="button" class="lock-toggle" aria-pressed="${isLocked ? "true" : "false"}">
+            <i class="fa-sharp fa-light ${isLocked ? "fa-lock" : "fa-lock-open"}" aria-hidden="true"></i>
+            <span>${isLocked ? "Locked" : "Lock"}</span>
+          </button>
+          ${
+            isLocked
+              ? `<button type="button" class="lock-edit">Edit note</button>`
+              : ""
+          }
+        </div>
+      </div>
+      <div class="lock-editor${editorVisible ? "" : " is-hidden"}" data-lock-editor>
+        <div class="lock-editor__title">Add a note (optional)</div>
+        <label class="lock-editor__label" for="lock-note-input-${tab?.id || "active"}">Note</label>
+        <input
+          id="lock-note-input-${tab?.id || "active"}"
+          class="lock-editor__input"
+          type="text"
+          maxlength="40"
+          placeholder="E.g. Waiting for underwriter…"
+        />
+        <div class="lock-editor__actions">
+          <button type="button" class="lock-editor__save">Save</button>
+          <button type="button" class="lock-editor__secondary">${isEditMode ? "Cancel" : "Skip"}</button>
+          ${isEditMode ? `<button type="button" class="lock-editor__clear">Clear</button>` : ""}
         </div>
       </div>
       <div class="work-area__body">
@@ -1093,6 +1198,80 @@ const renderWorkArea = ({ client, policy, activeAction }) => {
       </div>
     </div>
   `;
+    
+  const lockToggle = panel.querySelector(".lock-toggle");
+  const lockEdit = panel.querySelector(".lock-edit");
+  const lockEditor = panel.querySelector("[data-lock-editor]");
+  const lockInput = panel.querySelector(".lock-editor__input");
+  const lockSave = panel.querySelector(".lock-editor__save");
+  const lockSecondary = panel.querySelector(".lock-editor__secondary");
+  const lockClear = panel.querySelector(".lock-editor__clear");
+
+  if (lockToggle && tab) {
+    lockToggle.addEventListener("click", () => {
+      if (tab.isLocked) {
+        closeLockNoteEditor();
+        updateTabLockState(tab.id, { isLocked: false, lockNote: "" });
+      } else {
+        updateTabLockState(tab.id, { isLocked: true, lockNote: "" });
+        openLockNoteEditor(tab.id, "add");
+        renderActiveView();
+      }
+    });
+  }
+
+  if (lockEdit && tab) {
+    lockEdit.addEventListener("click", () => {
+      openLockNoteEditor(tab.id, "edit");
+      renderActiveView();
+    });
+  }
+
+  if (editorVisible && lockInput) {
+    lockInput.value = lockNote;
+    lockInput.focus();
+    lockInput.setSelectionRange(lockInput.value.length, lockInput.value.length);
+  }
+
+  const handleSave = () => {
+    if (!tab || !lockInput) return;
+    const noteValue = normalizeLockNote(lockInput.value);
+    updateTabLockState(tab.id, { isLocked: true, lockNote: noteValue });
+    closeLockNoteEditor();
+    renderActiveView();
+  };
+
+  const handleSecondary = () => {
+    closeLockNoteEditor();
+    renderActiveView();
+  };
+
+  if (lockSave) {
+    lockSave.addEventListener("click", handleSave);
+  }
+  if (lockSecondary) {
+    lockSecondary.addEventListener("click", handleSecondary);
+  }
+  if (lockClear && tab) {
+    lockClear.addEventListener("click", () => {
+      updateTabLockState(tab.id, { isLocked: true, lockNote: "" });
+      closeLockNoteEditor();
+      renderActiveView();
+    });
+  }
+  if (lockInput && tab) {
+    lockInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleSave();
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        handleSecondary();
+      }
+    });
+  }
+    
   return panel;
 };
 
@@ -1131,7 +1310,8 @@ const renderClientView = (tab) => {
       renderWorkArea({
         client,
         policy: selectedPolicy,
-        activeAction: tab.activePolicyAction
+        activeAction: tab.activePolicyAction,
+        tab
       })
     );
   } else {
@@ -1149,7 +1329,8 @@ const renderClientView = (tab) => {
       renderWorkArea({
         client,
         policy: null,
-        activeAction: tab.activeClientAction
+        activeAction: tab.activeClientAction,
+        tab
       })
     );
   }
