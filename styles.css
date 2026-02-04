@@ -317,7 +317,6 @@ nav-link i {
 .search-toggle:hover,
 .search-toggle:focus-visible {
   border-color: #cfd4dc;
-  box-shadow: 0 8px 18px rgba(15, 15, 15, 0.08);
   outline: none;
   color: var(--black);
 }
