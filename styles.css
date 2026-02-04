@@ -1156,6 +1156,30 @@ span.search-result__name {
   outline: none;
 }
 
+.customer-card__ai-summary {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f7f8fb;
+}
+
+.customer-card__ai-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  margin-top: 2px;
+  color: var(--mid-gray);
+}
+
+.customer-card__ai-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--dark-gray);
+}
+
 .customer-card__details {
   display: flex;
   align-items: center;
