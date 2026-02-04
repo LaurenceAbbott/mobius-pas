@@ -856,26 +856,30 @@ const activatePreviousTab = () => {
   setActiveTab(tabs[previousIndex].id);
 };
 
-const selectPolicyForTab = (tabId, policyId) => {
+const selectPolicyForTab = (tabId, policyId, { preserveAction = false, restoreScroll = false } = {}) => {
   const tab = tabs.find((item) => item.id === tabId);
   if (!tab) return;
   if (!tab.policyActionByPolicyId || typeof tab.policyActionByPolicyId !== "object") {
     tab.policyActionByPolicyId = {};
   }
   const policyChanged = tab.selectedPolicyId !== policyId;
-  if (policyChanged && tab.selectedPolicyId) {
+  const currentAction = tab.activePolicyAction;
+    if (policyChanged && tab.selectedPolicyId) {
     tab.lastSelectedPolicyId = tab.selectedPolicyId;
   }
   tab.selectedPolicyId = policyId;
-   const storedAction = tab.policyActionByPolicyId[policyId];
-  tab.activePolicyAction = storedAction || "Risk";
-  if (!tab.policyActionByPolicyId[policyId]) {
-    tab.policyActionByPolicyId[policyId] = tab.activePolicyAction;
-  }
+  const storedAction = tab.policyActionByPolicyId[policyId];
+  tab.activePolicyAction =
+    preserveAction && currentAction ? currentAction : storedAction || "Risk";
+  tab.policyActionByPolicyId[policyId] = tab.activePolicyAction;
   updateRecentTabs(tab);
   persistTabs();
   renderTabs();
+  const scrollTop = restoreScroll ? window.scrollY : null;
   renderActiveView();
+  if (restoreScroll && scrollTop !== null) {
+    requestAnimationFrame(() => window.scrollTo(0, scrollTop));
+  }
 };
 
 const clearPolicySelection = (tabId) => {
@@ -1085,6 +1089,52 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
     `;
     backButton.addEventListener("click", () => clearPolicySelection(tab.id));
     actionShell.appendChild(backButton);
+
+    const policySelector = document.createElement("details");
+    policySelector.className = "policy-select";
+    policySelector.innerHTML = `
+      <summary class="policy-select__summary">
+        <span class="policy-select__icon">
+          <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
+        </span>
+        <span class="policy-select__text">
+          <span class="policy-select__name">${policy.ref || "Policy"}</span>
+          <span class="policy-select__meta">
+            ${policyTypeLabels[policy.type] || policy.type || "Policy"}
+            ${policy.internalRef ? ` • ${policy.internalRef}` : ""}
+          </span>
+        </span>
+        <i class="fa-sharp fa-light fa-chevron-down" aria-hidden="true"></i>
+      </summary>
+      <div class="policy-select__list" role="listbox"></div>
+    `;
+    const policyList = policySelector.querySelector(".policy-select__list");
+    (client.policies || []).forEach((policyItem) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "policy-select__option";
+      if (policyItem.id === tab.selectedPolicyId) {
+        option.classList.add("is-active");
+      }
+      option.innerHTML = `
+        <span class="policy-select__option-icon">
+          <i class="${policyIconClasses[policyItem.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
+        </span>
+        <span class="policy-select__option-text">
+          <span class="policy-select__option-name">${policyItem.ref || "Policy"}</span>
+          <span class="policy-select__option-meta">
+            ${policyTypeLabels[policyItem.type] || policyItem.type || "Policy"}
+            ${policyItem.internalRef ? ` • ${policyItem.internalRef}` : ""}
+          </span>
+        </span>
+      `;
+      option.addEventListener("click", () => {
+        policySelector.open = false;
+        selectPolicyForTab(tab.id, policyItem.id, { preserveAction: true, restoreScroll: true });
+      });
+      policyList.appendChild(option);
+    });
+    actionShell.appendChild(policySelector);
 
     const policySection = document.createElement("div");
     policySection.className = "menu-section";
@@ -1385,7 +1435,9 @@ const renderBentoGrid = () => `
   const isPolicyView = Boolean(policy);
   const headerTitle = activeAction;
   const subheader = isPolicyView
-    ? `${policy.ref} • ${policyTypeLabels[policy.type] || policy.type} • ${client.name}`
+    ? `${policy.ref} • ${policyTypeLabels[policy.type] || policy.type}${
+        policy.internalRef ? ` • ${policy.internalRef}` : ""
+      } • ${client.name}`
     : `${client.name}${client.email ? ` • ${client.email}` : ""}`;
   const isLocked = Boolean(tab?.isLocked);
     
