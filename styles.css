@@ -663,11 +663,6 @@ span.search-result__name {
   position: relative;
 }
 
-.client-panel--policy {
-  background: #f7f8fb;
-  border-color: #e6e8ee;
-}
-
 .actions-panel {
   width: 100%;
   text-align: left;
@@ -1134,11 +1129,6 @@ span.search-result__name {
   gap: 8px;
   width: 100%;
   margin-top: 16px;
-}
-
-.client-panel--policy .customer-card__details,
-.client-panel--policy .customer-card__since {
-  display: none;
 }
 
 .customer-card__detail {
