@@ -46,6 +46,29 @@ const policyActions = [
   "Claims"
 ];
 
+const buildFunctionKeyShortcuts = (actions, { shift = false } = {}) =>
+  actions.reduce((acc, action, index) => {
+    const key = `F${index + 1}`;
+    acc[action] = {
+      key,
+      shift,
+      label: shift ? `Shift+${key}` : key
+    };
+    return acc;
+  }, {});
+
+const policyActionShortcuts = buildFunctionKeyShortcuts(policyActions);
+const clientActionShortcuts = buildFunctionKeyShortcuts(clientActions, { shift: true });
+const backToClientShortcut = { key: "Escape", label: "Esc" };
+const policyActionByKey = Object.entries(policyActionShortcuts).reduce((acc, [action, data]) => {
+  acc[data.key] = action;
+  return acc;
+}, {});
+const clientActionByKey = Object.entries(clientActionShortcuts).reduce((acc, [action, data]) => {
+  acc[data.key] = action;
+  return acc;
+}, {});
+
 const policyTypeLabels = {
   motor: "Motor",
   home: "Home",
@@ -424,7 +447,7 @@ if (breadcrumbBar) {
   workspaceContent.appendChild(emptyState);
 };
 
-const setClientAction = (tabId, action) => {
+const setClientActionForTab = (tabId, action) => {
   const tab = tabs.find((item) => item.id === tabId);
   if (!tab) return;
   tab.activeClientAction = action;
@@ -432,11 +455,11 @@ const setClientAction = (tabId, action) => {
   renderActiveView();
 };
 
-    const setPolicyAction = (tabId, action) => {
+const setPolicyActionForTab = (tabId, action) => {
   const tab = tabs.find((item) => item.id === tabId);
   if (!tab) return;
   tab.activePolicyAction = action;
-      if (!tab.policyActionByPolicyId || typeof tab.policyActionByPolicyId !== "object") {
+  if (!tab.policyActionByPolicyId || typeof tab.policyActionByPolicyId !== "object") {
     tab.policyActionByPolicyId = {};
   }
   if (tab.selectedPolicyId) {
@@ -444,6 +467,39 @@ const setClientAction = (tabId, action) => {
   }
   persistTabs();
   renderActiveView();
+};
+
+const setClientAction = (action) => {
+  const tab = tabs.find((item) => item.id === activeTabId);
+  if (!tab) return;
+  setClientActionForTab(tab.id, action);
+};
+
+const setPolicyAction = (action) => {
+  const tab = tabs.find((item) => item.id === activeTabId);
+  if (!tab || !tab.selectedPolicyId) return;
+  setPolicyActionForTab(tab.id, action);
+};
+
+const goBackToClientSummary = () => {
+  const tab = tabs.find((item) => item.id === activeTabId);
+  if (!tab || !tab.selectedPolicyId) return;
+  clearPolicySelection(tab.id);
+};
+
+const activateNextTab = () => {
+  if (!tabs.length) return;
+  const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+  const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % tabs.length;
+  setActiveTab(tabs[nextIndex].id);
+};
+
+const activatePreviousTab = () => {
+  if (!tabs.length) return;
+  const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+  const previousIndex =
+    currentIndex === -1 ? tabs.length - 1 : (currentIndex - 1 + tabs.length) % tabs.length;
+  setActiveTab(tabs[previousIndex].id);
 };
 
 const selectPolicyForTab = (tabId, policyId) => {
@@ -575,7 +631,14 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
             <h2 class="customer-card__name">${client.name}</h2>
             <span class="customer-card__email">${client.email}</span>
             <span class="customer-card__since">Client since: ${client.personal?.clientSince || ""}</span>
-            ${isPolicyView ? `<button class="client-back" type="button">Back to client summary</button>` : ""}
+            ${
+              isPolicyView
+                ? `<button class="client-back" type="button">
+                    Back to client summary
+                    <span class="shortcut-hint" aria-hidden="true">${backToClientShortcut.label}</span>
+                  </button>`
+                : ""
+            }
           </div>
         </div>
         <details class="customer-card__actions-menu">
@@ -714,7 +777,7 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
         <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
         <span class="policy-dropdown__option-text">
           <span class="policy-dropdown__option-ref">${policy.ref || "Policy"}</span>
-          <span class="policy-dropdown__option-type">${policyTypeLabels[policy.type] || policy.type || "Policy"}</span>
+          <span class="policy-dropdown__option-type">${policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"}</span>
         </span>
       </span>
       <span class="policy-dropdown__option-meta">${policy.internalRef || ""}</span>
@@ -733,7 +796,7 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
   return panel;
 };
 
-const renderActionPanel = ({ title, actions, activeAction, onSelect }) => {
+const renderActionPanel = ({ title, actions, activeAction, onSelect, shortcutMap }) => {
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack action-panel";
   panel.innerHTML = `
@@ -755,7 +818,16 @@ const renderActionPanel = ({ title, actions, activeAction, onSelect }) => {
       button.classList.add("is-active");
     }
     const iconClass = policyNavIcons[label] || "fa-sharp fa-light fa-file";
-    button.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i>${label}`;
+    const shortcutLabel = shortcutMap?.[label]?.label;
+    button.innerHTML = `
+      <i class="${iconClass}" aria-hidden="true"></i>
+      <span class="menu-link__text">${label}</span>
+      ${
+        shortcutLabel
+          ? `<span class="shortcut-hint" aria-hidden="true">${shortcutLabel}</span>`
+          : ""
+      }
+    `;
 
     button.addEventListener("click", () => onSelect(label));
 
@@ -1019,7 +1091,8 @@ const renderClientView = (tab) => {
         title: "Policy actions",
         actions: policyActions,
         activeAction: tab.activePolicyAction,
-        onSelect: (action) => setPolicyAction(tab.id, action)
+        onSelect: (action) => setPolicyAction(action),
+        shortcutMap: policyActionShortcuts
       })
     );
 
@@ -1036,7 +1109,8 @@ const renderClientView = (tab) => {
         title: "Client actions",
         actions: clientActions,
         activeAction: tab.activeClientAction,
-        onSelect: (action) => setClientAction(tab.id, action)
+        onSelect: (action) => setClientAction(action),
+        shortcutMap: clientActionShortcuts
       })
     );
 
@@ -1068,6 +1142,7 @@ const renderActiveView = () => {
 
 let overlaySearchUI = null;
 let overlayIsOpen = false;
+let overlayPreviousFocus = null;
 
   const getSearchMatches = (query) => {
   if (!query) return [];
@@ -1191,8 +1266,11 @@ const initSearchInterface = (container, { mode, onClose } = {}) => {
   return { input, results };
 };
 
-  const openSearchOverlay = () => {
+const openSearchOverlay = () => {
   if (!searchOverlay) return;
+  if (!overlayIsOpen) {
+    overlayPreviousFocus = document.activeElement;
+  }
   overlayIsOpen = true;
   searchOverlay.classList.add("is-open");
   searchOverlay.setAttribute("aria-hidden", "false");
@@ -1201,8 +1279,10 @@ const initSearchInterface = (container, { mode, onClose } = {}) => {
       mode: "overlay",
       onClose: closeSearchOverlay
     });
-  } else {
-    overlaySearchUI.input?.focus();
+  }
+  if (overlaySearchUI?.input) {
+    overlaySearchUI.input.focus();
+    overlaySearchUI.input.select();
   }
 };
 
@@ -1215,6 +1295,18 @@ const closeSearchOverlay = () => {
     overlaySearchUI.input.value = "";
     overlaySearchUI.results.innerHTML = "";
   }
+  if (overlayPreviousFocus && typeof overlayPreviousFocus.focus === "function") {
+    overlayPreviousFocus.focus();
+  }
+  overlayPreviousFocus = null;
+};
+
+const toggleSearchOverlay = () => {
+  if (overlayIsOpen) {
+    closeSearchOverlay();
+  } else {
+    openSearchOverlay();
+  }
 };
 
 const handleDocumentClick = (event) => {
@@ -1226,9 +1318,91 @@ const handleDocumentClick = (event) => {
   closeSearchOverlay();
 };
 
-const handleDocumentKeydown = (event) => {
-  if (event.key === "Escape" && overlayIsOpen) {
-    closeSearchOverlay();
+const isEditableTarget = (target) => {
+  if (!target) return false;
+  if (target.isContentEditable) return true;
+  const tagName = target.tagName;
+  if (tagName === "INPUT" || tagName === "TEXTAREA") return true;
+  if (typeof target.closest === "function") {
+    return Boolean(
+      target.closest(
+        "input, textarea, [contenteditable='true'], [contenteditable=''], [contenteditable='plaintext-only']"
+      )
+    );
+  }
+  return false;
+};
+
+const handleGlobalKeydown = (event) => {
+  const key = event.key;
+  const keyLower = key.toLowerCase();
+
+  if (keyLower === "k" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    toggleSearchOverlay();
+    return;
+  }
+
+  if (key === backToClientShortcut.key) {
+    if (overlayIsOpen) {
+      event.preventDefault();
+      closeSearchOverlay();
+      return;
+    }
+    const activeTab = tabs.find((tab) => tab.id === activeTabId);
+    if (activeTab?.selectedPolicyId) {
+      event.preventDefault();
+      goBackToClientSummary();
+    }
+    return;
+  }
+
+  if (overlayIsOpen) return;
+  if (isEditableTarget(event.target)) return;
+
+  if (event.ctrlKey && key === "Tab") {
+    event.preventDefault();
+    if (event.shiftKey) {
+      activatePreviousTab();
+    } else {
+      activateNextTab();
+    }
+    return;
+  }
+
+  if (event.metaKey && event.altKey && !event.ctrlKey) {
+    if (key === "ArrowRight") {
+      event.preventDefault();
+      activateNextTab();
+      return;
+    }
+    if (key === "ArrowLeft") {
+      event.preventDefault();
+      activatePreviousTab();
+      return;
+    }
+  }
+
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+  const activeTab = tabs.find((tab) => tab.id === activeTabId);
+  if (!activeTab) return;
+
+  if (activeTab.selectedPolicyId) {
+    const policyAction = policyActionByKey[key];
+    if (policyAction && !event.shiftKey) {
+      event.preventDefault();
+      setPolicyAction(policyAction);
+    }
+    return;
+  }
+
+  if (!activeTab.selectedPolicyId && event.shiftKey) {
+    const clientAction = clientActionByKey[key];
+    if (clientAction) {
+      event.preventDefault();
+      setClientAction(clientAction);
+    }
   }
 };
 
@@ -1237,11 +1411,7 @@ renderTabs();
 renderActiveView();
 
 searchToggle?.addEventListener("click", () => {
-  if (overlayIsOpen) {
-    closeSearchOverlay();
-  } else {
-    openSearchOverlay();
-  }
+  toggleSearchOverlay();
 });
 document.addEventListener("click", handleDocumentClick);
-document.addEventListener("keydown", handleDocumentKeydown);
+document.addEventListener("keydown", handleGlobalKeydown);
