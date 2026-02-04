@@ -1081,7 +1081,7 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
     actionShell.appendChild(backButton);
 
     const policySelector = document.createElement("details");
-    policySelector.className = "policy-select";
+    policySelector.className = "policy-select is-selected";
     policySelector.innerHTML = `
       <summary class="policy-select__summary">
         <span class="policy-select__icon">
