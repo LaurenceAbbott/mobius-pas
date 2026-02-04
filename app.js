@@ -49,7 +49,7 @@ const policyActions = [
 const isMacPlatform =
   /Mac|iPhone|iPad|iPod/.test(navigator.platform) ||
   /Mac OS X/.test(navigator.userAgent);
-const shortcutPrefix = isMacPlatform ? "⌘⇧" : "Ctrl+Shift+";
+const shortcutPrefix = isMacPlatform ? "⌥" : "Alt+";
 const formatShortcutLabel = (key) => `${shortcutPrefix}${key}`;
 
 const buildActionShortcuts = (actions, specs) =>
@@ -1393,7 +1393,9 @@ const handleGlobalKeydown = (event) => {
   if (overlayIsOpen) return;
   if (isEditableTarget(event.target)) return;
 
-  if (event.shiftKey && (event.ctrlKey || event.metaKey) && !event.altKey) {
+  const isAltOnly = event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
+
+  if (isAltOnly) {
     if (key === "ArrowRight") {
       event.preventDefault();
       activateNextTab();
@@ -1406,8 +1408,7 @@ const handleGlobalKeydown = (event) => {
     }
   }
 
-  const isActionCombo = event.shiftKey && (event.ctrlKey || event.metaKey) && !event.altKey;
-  if (!isActionCombo) return;
+  if (!isAltOnly) return;
 
   const activeTab = tabs.find((tab) => tab.id === activeTabId);
   if (!activeTab) return;
