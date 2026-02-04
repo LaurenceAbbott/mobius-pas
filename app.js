@@ -21,6 +21,7 @@ let tabs = [];
 let activeTabId = null;
 let recentTabs = [];
 let lockNoteEditorState = { tabId: null, isOpen: false, mode: "add" };
+let lockPopoverListeners = { outside: null, keydown: null };
 
 const clientActions = [
   "Summary",
@@ -197,7 +198,7 @@ const persistTabs = () => {
 
 const normalizeLockNote = (note) => {
   if (typeof note !== "string") return "";
-  return note.trim().slice(0, 40);
+  return note.trim().slice(0, 60);
 };
 
 const normalizeStoredTab = (tab) => {
@@ -331,8 +332,19 @@ const updateRecentTabs = (tab) => {
   recentTabs = [tab, ...recentTabs.filter((item) => item.id !== tab.id)].slice(0, 6);
 };
 
+const clearLockPopoverListeners = () => {
+  if (lockPopoverListeners.outside) {
+    document.removeEventListener("click", lockPopoverListeners.outside);
+  }
+  if (lockPopoverListeners.keydown) {
+    document.removeEventListener("keydown", lockPopoverListeners.keydown);
+  }
+  lockPopoverListeners = { outside: null, keydown: null };
+};
+
 const closeLockNoteEditor = () => {
   lockNoteEditorState = { tabId: null, isOpen: false, mode: "add" };
+  clearLockPopoverListeners();
 };
 
 const openLockNoteEditor = (tabId, mode = "add") => {
@@ -456,10 +468,14 @@ const renderTabs = () => {
     const titleRow = document.createElement("div");
     titleRow.className = "tab__title-row";
     if (tab.isLocked) {
-      const lockIcon = document.createElement("span");
-      lockIcon.className = "tab__lock";
+      const lockIcon = document.createElement("button");
+      const tooltipText = tab.lockNote ? tab.lockNote : "Locked — no note";
+      lockIcon.type = "button";
+      lockIcon.className = "tab__lock-button";
       lockIcon.innerHTML = `<i class="fa-sharp fa-light fa-lock" aria-hidden="true"></i>`;
-      lockIcon.setAttribute("title", "Locked tab");
+      lockIcon.setAttribute("data-tooltip", tooltipText);
+      lockIcon.setAttribute("aria-label", tooltipText);
+      lockIcon.setAttribute("title", tooltipText);
       titleRow.appendChild(lockIcon);
     }
     const titleText = document.createElement("span");
@@ -506,15 +522,7 @@ const renderTabs = () => {
       }
     });
 
-    if (tab.isLocked && tab.lockNote) {
-      const notePill = document.createElement("span");
-      notePill.className = "tab__note";
-      notePill.textContent = tab.lockNote;
-      notePill.setAttribute("title", tab.lockNote);
-      tabElement.append(meta, notePill, pinButton, closeButton);
-    } else {
-      tabElement.append(meta, pinButton, closeButton);
-    }
+    tabElement.append(meta, pinButton, closeButton);
     tabBar.appendChild(tabElement);
   });
 if (tabActions) {
@@ -1177,20 +1185,23 @@ const isLocked = Boolean(tab?.isLocked);
           }
         </div>
       </div>
-      <div class="lock-editor${editorVisible ? "" : " is-hidden"}" data-lock-editor>
-        <div class="lock-editor__title">Add a note (optional)</div>
-        <label class="lock-editor__label" for="lock-note-input-${tab?.id || "active"}">Note</label>
+      <div class="lock-popover${editorVisible ? "" : " is-hidden"}" data-lock-popover>
+        <div class="lock-popover__title">${isEditMode ? "Edit note" : "Add a note (optional)"}</div>
+        <label class="lock-popover__label" for="lock-note-input-${tab?.id || "active"}">Note</label>
         <input
           id="lock-note-input-${tab?.id || "active"}"
-          class="lock-editor__input"
+          class="lock-popover__input"
           type="text"
-          maxlength="40"
-          placeholder="E.g. Waiting for underwriter…"
+          maxlength="60"
+          placeholder="Add a note (optional)…"
         />
-        <div class="lock-editor__actions">
-          <button type="button" class="lock-editor__save">Save</button>
-          <button type="button" class="lock-editor__secondary">${isEditMode ? "Cancel" : "Skip"}</button>
-          ${isEditMode ? `<button type="button" class="lock-editor__clear">Clear</button>` : ""}
+        <div class="lock-popover__meta">
+          <span class="lock-popover__count">0/60</span>
+        </div>
+        <div class="lock-popover__actions">
+          <button type="button" class="lock-popover__save">Save</button>
+          <button type="button" class="lock-popover__secondary">Cancel</button>
+          <button type="button" class="lock-popover__clear">Clear</button>
         </div>
       </div>
       <div class="work-area__body">
@@ -1201,11 +1212,12 @@ const isLocked = Boolean(tab?.isLocked);
     
   const lockToggle = panel.querySelector(".lock-toggle");
   const lockEdit = panel.querySelector(".lock-edit");
-  const lockEditor = panel.querySelector("[data-lock-editor]");
-  const lockInput = panel.querySelector(".lock-editor__input");
-  const lockSave = panel.querySelector(".lock-editor__save");
-  const lockSecondary = panel.querySelector(".lock-editor__secondary");
-  const lockClear = panel.querySelector(".lock-editor__clear");
+  const lockPopover = panel.querySelector("[data-lock-popover]");
+  const lockInput = panel.querySelector(".lock-popover__input");
+  const lockSave = panel.querySelector(".lock-popover__save");
+  const lockSecondary = panel.querySelector(".lock-popover__secondary");
+  const lockClear = panel.querySelector(".lock-popover__clear");
+  const lockCount = panel.querySelector(".lock-popover__count");
 
   if (lockToggle && tab) {
     lockToggle.addEventListener("click", () => {
@@ -1227,8 +1239,17 @@ const isLocked = Boolean(tab?.isLocked);
     });
   }
 
+  const updateLockCount = () => {
+    if (!lockInput || !lockCount) return;
+    if (lockInput.value.length > 60) {
+      lockInput.value = lockInput.value.slice(0, 60);
+    }
+    lockCount.textContent = `${lockInput.value.length}/60`;
+  };
+
   if (editorVisible && lockInput) {
     lockInput.value = lockNote;
+    updateLockCount();
     lockInput.focus();
     lockInput.setSelectionRange(lockInput.value.length, lockInput.value.length);
   }
@@ -1260,6 +1281,7 @@ const isLocked = Boolean(tab?.isLocked);
     });
   }
   if (lockInput && tab) {
+    lockInput.addEventListener("input", updateLockCount);
     lockInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
@@ -1270,6 +1292,30 @@ const isLocked = Boolean(tab?.isLocked);
         handleSecondary();
       }
     });
+  }
+
+  if (editorVisible && lockPopover && tab) {
+    clearLockPopoverListeners();
+    lockPopoverListeners.outside = (event) => {
+      if (
+        lockPopover.contains(event.target) ||
+        lockToggle?.contains(event.target) ||
+        lockEdit?.contains(event.target)
+      ) {
+        return;
+      }
+      closeLockNoteEditor();
+      renderActiveView();
+    };
+    lockPopoverListeners.keydown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeLockNoteEditor();
+        renderActiveView();
+      }
+    };
+    document.addEventListener("click", lockPopoverListeners.outside);
+    document.addEventListener("keydown", lockPopoverListeners.keydown);
   }
     
   return panel;
