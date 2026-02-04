@@ -30,6 +30,8 @@ let tooltipTarget = null;
 let lockNoteOverlay = null;
 let lockNotePopover = null;
 let lockNotePopoverElements = null;
+let isWorkAreaFullscreen = false;
+let previousBodyOverflow = "";
 
 const clientActions = [
   "Summary",
@@ -1462,6 +1464,17 @@ const renderBentoGrid = () => `
             <i class="fa-sharp fa-light ${isLocked ? "fa-lock" : "fa-lock-open"}" aria-hidden="true"></i>
             <span>${isLocked ? "Locked" : "Lock"}</span>
           </button>
+          <button
+            type="button"
+            class="work-header__icon-button"
+            data-action="toggle-work-area-fullscreen"
+            data-tooltip="${isWorkAreaFullscreen ? "Exit full screen" : "Full screen"}"
+            aria-label="${isWorkAreaFullscreen ? "Exit full screen" : "Enter full screen"}"
+          >
+            <i class="fa-sharp fa-light ${
+              isWorkAreaFullscreen ? "fa-xmark" : "fa-up-right-and-down-left-from-center"
+            }" aria-hidden="true"></i>
+          </button>
           ${isLocked ? `<a href="#" class="lock-edit" data-action="edit-lock-note">Edit note</a>` : ""}
         </div>
       </div>
@@ -1473,6 +1486,7 @@ const renderBentoGrid = () => `
     
   const lockToggle = panel.querySelector(".lock-toggle");
   const lockEdit = panel.querySelector(".lock-edit");
+    const fullscreenToggle = panel.querySelector("[data-action='toggle-work-area-fullscreen']");
 
   if (lockToggle && tab) {
     lockToggle.addEventListener("click", () => {
@@ -1485,7 +1499,13 @@ const renderBentoGrid = () => `
       }
     });
   }
-  
+    
+   if (fullscreenToggle) {
+    fullscreenToggle.addEventListener("click", () => {
+      setWorkAreaFullscreen(!isWorkAreaFullscreen);
+    });
+  }
+    
   if (tab?.id && lockNoteEditorState.isOpen && lockNoteEditorState.tabId === tab.id && isLocked) {
     showLockNotePopover(tab);
   }
@@ -1541,6 +1561,7 @@ const renderActiveView = () => {
 
   renderClientView(activeTab);
   renderBreadcrumbs(activeTab);
+  updateWorkAreaFullscreen();
 };
 
 let overlaySearchUI = null;
@@ -1782,6 +1803,35 @@ const handleTooltipDismiss = () => {
   hideTooltip();
 };
 
+const updateWorkAreaFullscreen = () => {
+  const workArea = document.querySelector(".work-area");
+  if (!workArea) return;
+  workArea.classList.toggle("is-fullscreen", isWorkAreaFullscreen);
+  const button = workArea.querySelector("[data-action='toggle-work-area-fullscreen']");
+  if (!button) return;
+  const icon = button.querySelector("i");
+  if (icon) {
+    icon.className = `fa-sharp fa-light ${
+      isWorkAreaFullscreen ? "fa-xmark" : "fa-up-right-and-down-left-from-center"
+    }`;
+  }
+  button.setAttribute("aria-label", isWorkAreaFullscreen ? "Exit full screen" : "Enter full screen");
+  button.setAttribute("data-tooltip", isWorkAreaFullscreen ? "Exit full screen" : "Full screen");
+};
+
+const setWorkAreaFullscreen = (nextState) => {
+  if (isWorkAreaFullscreen === nextState) return;
+  isWorkAreaFullscreen = nextState;
+  if (isWorkAreaFullscreen) {
+    previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = previousBodyOverflow || "";
+    previousBodyOverflow = "";
+  }
+  updateWorkAreaFullscreen();
+};
+
 const isEditableTarget = (target) => {
   if (!target) return false;
   if (target.isContentEditable) return true;
@@ -1802,6 +1852,12 @@ const handleGlobalKeydown = (event) => {
   const keyLower = key.toLowerCase();
   const keyCode = event.code;
 
+  if (key === "Escape" && isWorkAreaFullscreen) {
+    event.preventDefault();
+    setWorkAreaFullscreen(false);
+    return;
+  }
+  
   if (keyLower === "k" && (event.ctrlKey || event.metaKey)) {
     event.preventDefault();
     toggleSearchOverlay();
