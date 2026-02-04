@@ -116,10 +116,11 @@ const getTabDisplay = (tab) => {
 
   if (tab.selectedPolicyId) {
     const policy = getPolicyById(client, tab.selectedPolicyId);
-    if (policy) {
+    if (policy?.ref) {
+      const policyType = policyTypeLabels[policy.type] || policy.type || "";
       return {
-        title: `${policy.ref} · ${client.name}`,
-        subtitle: ""
+        title: policy.ref,
+        subtitle: policyType ? `${policyType} · ${client.name}` : client.name
       };
     }
   }
@@ -444,6 +445,9 @@ const resetClientSelection = (tabId) => {
 };
 
 const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyView, onBack }) => {
+  const selectedPolicy = selectedPolicyId
+    ? getPolicyById(client, selectedPolicyId)
+    : null;
   const panel = document.createElement("div");
   panel.className = "panel-card panel-card--stack client-panel";
   if (isPolicyView) {
@@ -499,42 +503,115 @@ const renderClientPanel = ({ client, selectedPolicyId, onSelectPolicy, isPolicyV
       </div>
     </div>
     <div class="client-panel__section">
-      <p class="menu-title">Product list</p>
-      <div class="policy-list" data-policy-list></div>
+      <p class="menu-title">Policy list</p>
+      <div class="policy-dropdown" data-policy-dropdown>
+        <button class="policy-dropdown__trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+          ${
+            selectedPolicy
+              ? `
+                <span class="policy-dropdown__value">
+                  <span class="policy-dropdown__value-ref">${selectedPolicy.ref || "Policy"}</span>
+                  <span class="policy-dropdown__value-type">${policyTypeLabels[selectedPolicy.type] || selectedPolicy.type || "Policy"}</span>
+                </span>
+              `
+              : `<span class="policy-dropdown__placeholder">Select a policy</span>`
+          }
+          <i class="fa-sharp fa-light fa-chevron-down" aria-hidden="true"></i>
+        </button>
+        <div class="policy-dropdown__menu" role="listbox" tabindex="-1"></div>
+      </div>
     </div>
   `;
 
-    if (isPolicyView) {
+  if (isPolicyView) {
     const backButton = panel.querySelector(".client-back");
     if (backButton) {
       backButton.addEventListener("click", () => onBack?.());
     }
   }
 
-  const list = panel.querySelector("[data-policy-list]");
-  client.policies?.forEach((policy) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "policy-card";
-     if (policy.id === selectedPolicyId) {
-      button.classList.add("is-active");
-    }
-    button.innerHTML = `
-      <div class="policy-card__title">
-        <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
-        ${policy.ref}
-        <span class="policy-pill">${policyTypeLabels[policy.type] || "Policy"}</span>
-      </div>
-      <div class="policy-card__meta">${policy.internalRef}</div>
-    `;
+  const dropdown = panel.querySelector("[data-policy-dropdown]");
+  const trigger = dropdown?.querySelector(".policy-dropdown__trigger");
+  const menu = dropdown?.querySelector(".policy-dropdown__menu");
+  let dropdownOpen = false;
+  let outsideHandler = null;
 
-    button.addEventListener("click", () => {
-            if (onSelectPolicy) {
-        onSelectPolicy(policy.id);
+  const closeDropdown = () => {
+    if (!dropdown || !trigger || !menu) return;
+    dropdownOpen = false;
+    dropdown.classList.remove("is-open");
+    trigger.setAttribute("aria-expanded", "false");
+    if (outsideHandler) {
+      document.removeEventListener("click", outsideHandler);
+      outsideHandler = null;
+    }
+  };
+
+  const openDropdown = () => {
+    if (!dropdown || !trigger || !menu) return;
+    dropdownOpen = true;
+    dropdown.classList.add("is-open");
+    trigger.setAttribute("aria-expanded", "true");
+    outsideHandler = (event) => {
+      if (!dropdown.contains(event.target)) {
+        closeDropdown();
+      }
+    };
+    document.addEventListener("click", outsideHandler);
+  };
+
+  if (trigger && menu) {
+    trigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (dropdownOpen) {
+        closeDropdown();
+      } else {
+        openDropdown();
       }
     });
 
-    list.appendChild(button);
+    trigger.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeDropdown();
+      }
+    });
+
+    menu.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeDropdown();
+        trigger.focus();
+      }
+    });
+  }
+
+  client.policies?.forEach((policy) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "policy-dropdown__option";
+    if (policy.id === selectedPolicyId) {
+      button.classList.add("is-active");
+    }
+    button.dataset.policyId = policy.id;
+    button.setAttribute("role", "option");
+    button.innerHTML = `
+      <span class="policy-dropdown__option-left">
+        <i class="${policyIconClasses[policy.type] || "fa-sharp fa-light fa-file"}" aria-hidden="true"></i>
+        <span class="policy-dropdown__option-text">
+          <span class="policy-dropdown__option-ref">${policy.ref || "Policy"}</span>
+          <span class="policy-dropdown__option-type">${policyTypeLabels[policy.type] || policy.type || "Policy"}</span>
+        </span>
+      </span>
+      <span class="policy-dropdown__option-meta">${policy.internalRef || ""}</span>
+    `;
+
+    button.addEventListener("click", () => {
+      if (onSelectPolicy) {
+        onSelectPolicy(policy.id);
+      }
+      closeDropdown();
+    });
+
+    menu?.appendChild(button);
   });
 
   return panel;
