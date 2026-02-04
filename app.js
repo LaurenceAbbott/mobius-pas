@@ -1133,7 +1133,7 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
 
     const policySection = document.createElement("div");
     policySection.className = "menu-section";
-    policySection.innerHTML = `<p class="menu-title">Policy actions</p>`;
+    policySection.innerHTML = `<p class="menu-title">Policy</p>`;
     policySection.appendChild(
       renderActionList({
         actions: policyActions,
