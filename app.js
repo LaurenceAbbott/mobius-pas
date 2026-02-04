@@ -1201,6 +1201,7 @@ const renderNavigationPanel = ({ client, tab, policy }) => {
         <span class="policy-row__text">
           <span class="policy-row__ref">${policyItem.ref || "Policy"}</span>
           <span class="policy-row__type">${policyTypeLabels[policyItem.type] || policyItem.type || "Policy"}</span>
+        ${policyItem.internalRef ? `<span class="policy-row__internal-ref">${policyItem.internalRef}</span>` : ""}
         </span>
         <span class="policy-row__meta">
           ${isLapsed ? `<span class="policy-row__status">Lapsed</span>` : ""}
