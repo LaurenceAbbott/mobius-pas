@@ -699,6 +699,18 @@ span.search-result__name {
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
+.menu-link__text {
+  flex: 1;
+}
+
+.shortcut-hint {
+  font-size: 0.7rem;
+  color: var(--mid-gray);
+  font-weight: 400;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
 .menu-link i {
   font-size: 0.9rem;
   color: var(--mid-gray);
@@ -798,12 +810,25 @@ span.search-result__name {
   padding: 0;
   text-align: left;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.client-back .shortcut-hint {
+  margin-left: 8px;
 }
 
 .client-back:hover,
 .client-back:focus-visible {
   text-decoration: underline;
   outline: none;
+}
+
+@media (max-width: 900px) {
+  .shortcut-hint {
+    display: none;
+  }
 }
 
 .customer-card__actions-menu {
