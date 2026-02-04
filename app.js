@@ -10,6 +10,9 @@ const clients = window.CLIENTS || {};
 const TAB_STORAGE_KEY = "mobiusTabs";
 const ACTIVE_TAB_STORAGE_KEY = "mobiusActiveTab";
 const RECENT_TAB_STORAGE_KEY = "mobiusRecentTabs";
+const TOOLTIP_ID = "app-tooltip";
+const LOCK_NOTE_POPOVER_ID = "lock-note-popover";
+const LOCK_NOTE_MAX = 60;
 
 const clientList = Object.values(clients);
 const clientIndex = clientList.reduce((acc, client) => {
@@ -22,6 +25,11 @@ let activeTabId = null;
 let recentTabs = [];
 let lockNoteEditorState = { tabId: null, isOpen: false, mode: "add" };
 let lockPopoverListeners = { outside: null, keydown: null };
+let appTooltip = null;
+let tooltipTarget = null;
+let lockNotePopover = null;
+let lockNotePopoverElements = null;
+let lockPopoverAnchor = null;
 
 const clientActions = [
   "Summary",
@@ -244,7 +252,7 @@ const persistTabs = () => {
 
 const normalizeLockNote = (note) => {
   if (typeof note !== "string") return "";
-  return note.trim().slice(0, 60);
+  return note.trim().slice(0, LOCK_NOTE_MAX);
 };
 
 const normalizeStoredTab = (tab) => {
@@ -390,12 +398,215 @@ const clearLockPopoverListeners = () => {
 
 const closeLockNoteEditor = () => {
   lockNoteEditorState = { tabId: null, isOpen: false, mode: "add" };
+  lockPopoverAnchor = null;
+  if (lockNotePopover) {
+    lockNotePopover.setAttribute("aria-hidden", "true");
+    lockNotePopover.hidden = true;
+  }
   clearLockPopoverListeners();
 };
 
-const openLockNoteEditor = (tabId, mode = "add") => {
+const openLockNoteEditor = (tabId, mode = "add", anchorType = "lock-edit") => {
   lockNoteEditorState = { tabId, isOpen: true, mode };
+  lockPopoverAnchor = anchorType;
 };
+
+const ensureTooltip = () => {
+  if (appTooltip) return appTooltip;
+  const tooltip = document.createElement("div");
+  tooltip.id = TOOLTIP_ID;
+  tooltip.className = "app-tooltip";
+  tooltip.setAttribute("role", "tooltip");
+  tooltip.hidden = true;
+  document.body.appendChild(tooltip);
+  appTooltip = tooltip;
+  return tooltip;
+};
+
+const positionTooltip = (target, tooltip) => {
+  if (!target || !tooltip) return;
+  const rect = target.getBoundingClientRect();
+  const spacing = 10;
+  const tooltipRect = tooltip.getBoundingClientRect();
+  let top = rect.top - tooltipRect.height - spacing;
+  let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+
+  if (top < spacing) {
+    top = rect.bottom + spacing;
+  }
+  const maxLeft = window.innerWidth - tooltipRect.width - spacing;
+  if (left < spacing) left = spacing;
+  if (left > maxLeft) left = maxLeft;
+
+  tooltip.style.top = `${top}px`;
+  tooltip.style.left = `${left}px`;
+};
+
+const showTooltip = (target) => {
+  if (!target) return;
+  const text = target.getAttribute("data-tooltip");
+  if (!text) return;
+  const tooltip = ensureTooltip();
+  tooltip.textContent = text;
+  tooltip.hidden = false;
+  tooltipTarget?.removeAttribute("aria-describedby");
+  tooltipTarget = target;
+  target.setAttribute("aria-describedby", TOOLTIP_ID);
+  positionTooltip(target, tooltip);
+};
+
+const hideTooltip = () => {
+  if (!appTooltip) return;
+  appTooltip.hidden = true;
+  tooltipTarget?.removeAttribute("aria-describedby");
+  tooltipTarget = null;
+};
+
+const updateLockNoteCount = () => {
+  if (!lockNotePopoverElements?.input || !lockNotePopoverElements?.count) return;
+  if (lockNotePopoverElements.input.value.length > LOCK_NOTE_MAX) {
+    lockNotePopoverElements.input.value = lockNotePopoverElements.input.value.slice(0, LOCK_NOTE_MAX);
+  }
+  lockNotePopoverElements.count.textContent = `${lockNotePopoverElements.input.value.length}/${LOCK_NOTE_MAX}`;
+};
+
+const getLockNoteTab = () => tabs.find((tab) => tab.id === lockNoteEditorState.tabId);
+
+const ensureLockNotePopover = () => {
+  if (lockNotePopover) return lockNotePopoverElements;
+  lockNotePopover = document.createElement("div");
+  lockNotePopover.id = LOCK_NOTE_POPOVER_ID;
+  lockNotePopover.className = "lock-note-popover";
+  lockNotePopover.setAttribute("role", "dialog");
+  lockNotePopover.setAttribute("aria-modal", "false");
+  lockNotePopover.setAttribute("aria-hidden", "true");
+  lockNotePopover.hidden = true;
+  lockNotePopover.innerHTML = `
+    <div class="lock-note-popover__title" id="lock-note-title">Lock note</div>
+    <label class="lock-note-popover__label" for="lock-note-input">Note</label>
+    <input
+      id="lock-note-input"
+      class="lock-note-popover__input"
+      type="text"
+      maxlength="${LOCK_NOTE_MAX}"
+      placeholder="Add a note (optional)…"
+    />
+    <div class="lock-note-popover__meta">
+      <span class="lock-note-popover__count">0/${LOCK_NOTE_MAX}</span>
+    </div>
+    <div class="lock-note-popover__actions">
+      <button type="button" data-action="save-lock-note">Save</button>
+      <button type="button" data-action="cancel-lock-note">Cancel</button>
+      <button type="button" data-action="clear-lock-note">Clear</button>
+    </div>
+  `;
+  lockNotePopover.setAttribute("aria-labelledby", "lock-note-title");
+  document.body.appendChild(lockNotePopover);
+  lockNotePopoverElements = {
+    input: lockNotePopover.querySelector(".lock-note-popover__input"),
+    count: lockNotePopover.querySelector(".lock-note-popover__count"),
+    title: lockNotePopover.querySelector(".lock-note-popover__title")
+  };
+  lockNotePopoverElements.input.addEventListener("input", updateLockNoteCount);
+  lockNotePopoverElements.input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleSaveLockNote();
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleCancelLockNote();
+    }
+  });
+  return lockNotePopoverElements;
+};
+
+const positionLockNotePopover = (anchor) => {
+  if (!lockNotePopover || !anchor) return;
+  const rect = anchor.getBoundingClientRect();
+  const spacing = 10;
+  const popoverRect = lockNotePopover.getBoundingClientRect();
+  let top = rect.bottom + spacing;
+  let left = rect.right - popoverRect.width;
+  const maxLeft = window.innerWidth - popoverRect.width - spacing;
+  if (left < spacing) left = spacing;
+  if (left > maxLeft) left = maxLeft;
+  if (top + popoverRect.height > window.innerHeight - spacing) {
+    const alternateTop = rect.top - popoverRect.height - spacing;
+    if (alternateTop > spacing) {
+      top = alternateTop;
+    }
+  }
+  lockNotePopover.style.top = `${top}px`;
+  lockNotePopover.style.left = `${left}px`;
+};
+
+const updateLockNotePopoverContent = (tab) => {
+  if (!tab || !lockNotePopoverElements) return;
+  const { input, count } = lockNotePopoverElements;
+  input.value = tab.lockNote || "";
+  if (input.value.length > LOCK_NOTE_MAX) {
+    input.value = input.value.slice(0, LOCK_NOTE_MAX);
+  }
+  count.textContent = `${input.value.length}/${LOCK_NOTE_MAX}`;
+};
+
+const showLockNotePopover = (tab, anchor) => {
+  if (!tab) return;
+  ensureLockNotePopover();
+  lockNotePopover.hidden = false;
+  lockNotePopover.setAttribute("aria-hidden", "false");
+  updateLockNotePopoverContent(tab);
+  positionLockNotePopover(anchor);
+  lockNotePopoverElements.input.focus();
+  lockNotePopoverElements.input.setSelectionRange(
+    lockNotePopoverElements.input.value.length,
+    lockNotePopoverElements.input.value.length
+  );
+
+  clearLockPopoverListeners();
+  lockPopoverListeners.outside = (event) => {
+    if (
+      lockNotePopover.contains(event.target) ||
+      anchor?.contains(event.target)
+    ) {
+      return;
+    }
+    closeLockNoteEditor();
+    renderActiveView();
+  };
+  lockPopoverListeners.keydown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeLockNoteEditor();
+      renderActiveView();
+    }
+  };
+  document.addEventListener("click", lockPopoverListeners.outside);
+  document.addEventListener("keydown", lockPopoverListeners.keydown);
+};
+
+function handleSaveLockNote() {
+  const tab = getLockNoteTab();
+  if (!tab || !lockNotePopoverElements?.input) return;
+  const noteValue = normalizeLockNote(lockNotePopoverElements.input.value);
+  updateTabLockState(tab.id, { isLocked: true, lockNote: noteValue });
+  closeLockNoteEditor();
+  renderActiveView();
+}
+
+function handleCancelLockNote() {
+  closeLockNoteEditor();
+  renderActiveView();
+}
+
+function handleClearLockNote() {
+  const tab = getLockNoteTab();
+  if (!tab) return;
+  updateTabLockState(tab.id, { isLocked: true, lockNote: "" });
+  closeLockNoteEditor();
+  renderActiveView();
+}
 
 const updateTabLockState = (tabId, { isLocked, lockNote }) => {
   const tab = tabs.find((item) => item.id === tabId);
@@ -515,13 +726,12 @@ const renderTabs = () => {
     titleRow.className = "tab__title-row";
     if (tab.isLocked) {
       const lockIcon = document.createElement("button");
-      const tooltipText = tab.lockNote ? tab.lockNote : "Locked — no note";
+      const tooltipText = `Locked — ${tab.lockNote ? tab.lockNote : "no note"}`;
       lockIcon.type = "button";
       lockIcon.className = "tab__lock-button";
       lockIcon.innerHTML = `<i class="fa-sharp fa-light fa-lock" aria-hidden="true"></i>`;
       lockIcon.setAttribute("data-tooltip", tooltipText);
       lockIcon.setAttribute("aria-label", tooltipText);
-      lockIcon.setAttribute("title", tooltipText);
       titleRow.appendChild(lockIcon);
     }
     const titleText = document.createElement("span");
@@ -1186,15 +1396,7 @@ const renderBentoGrid = () => `
   const subheader = isPolicyView
     ? `${policy.ref} • ${policyTypeLabels[policy.type] || policy.type} • ${client.name}`
     : `${client.name}${client.email ? ` • ${client.email}` : ""}`;
-const isLocked = Boolean(tab?.isLocked);
-  const lockNote = tab?.lockNote || "";
-  const editorVisible = Boolean(
-    tab?.id &&
-      lockNoteEditorState.isOpen &&
-      lockNoteEditorState.tabId === tab.id &&
-      isLocked
-  );
-  const isEditMode = lockNoteEditorState.mode === "edit";
+  const isLocked = Boolean(tab?.isLocked);
     
   let content = renderBentoGrid();
   if (!isPolicyView && activeAction === "Summary") {
@@ -1216,30 +1418,7 @@ const isLocked = Boolean(tab?.isLocked);
             <i class="fa-sharp fa-light ${isLocked ? "fa-lock" : "fa-lock-open"}" aria-hidden="true"></i>
             <span>${isLocked ? "Locked" : "Lock"}</span>
           </button>
-          ${
-            isLocked
-              ? `<button type="button" class="lock-edit">Edit note</button>`
-              : ""
-          }
-        </div>
-      </div>
-      <div class="lock-popover${editorVisible ? "" : " is-hidden"}" data-lock-popover>
-        <div class="lock-popover__title">${isEditMode ? "Edit note" : "Add a note (optional)"}</div>
-        <label class="lock-popover__label" for="lock-note-input-${tab?.id || "active"}">Note</label>
-        <input
-          id="lock-note-input-${tab?.id || "active"}"
-          class="lock-popover__input"
-          type="text"
-          maxlength="60"
-          placeholder="Add a note (optional)…"
-        />
-        <div class="lock-popover__meta">
-          <span class="lock-popover__count">0/60</span>
-        </div>
-        <div class="lock-popover__actions">
-          <button type="button" class="lock-popover__save">Save</button>
-          <button type="button" class="lock-popover__secondary">Cancel</button>
-          <button type="button" class="lock-popover__clear">Clear</button>
+          ${isLocked ? `<a href="#" class="lock-edit" data-action="edit-lock-note">Edit note</a>` : ""}
         </div>
       </div>
       <div class="work-area__body">
@@ -1250,12 +1429,6 @@ const isLocked = Boolean(tab?.isLocked);
     
   const lockToggle = panel.querySelector(".lock-toggle");
   const lockEdit = panel.querySelector(".lock-edit");
-  const lockPopover = panel.querySelector("[data-lock-popover]");
-  const lockInput = panel.querySelector(".lock-popover__input");
-  const lockSave = panel.querySelector(".lock-popover__save");
-  const lockSecondary = panel.querySelector(".lock-popover__secondary");
-  const lockClear = panel.querySelector(".lock-popover__clear");
-  const lockCount = panel.querySelector(".lock-popover__count");
 
   if (lockToggle && tab) {
     lockToggle.addEventListener("click", () => {
@@ -1263,97 +1436,18 @@ const isLocked = Boolean(tab?.isLocked);
         closeLockNoteEditor();
         updateTabLockState(tab.id, { isLocked: false, lockNote: "" });
       } else {
+        openLockNoteEditor(tab.id, "add", "lock-toggle");
         updateTabLockState(tab.id, { isLocked: true, lockNote: "" });
-        openLockNoteEditor(tab.id, "add");
-        renderActiveView();
       }
     });
   }
-
-  if (lockEdit && tab) {
-    lockEdit.addEventListener("click", () => {
-      openLockNoteEditor(tab.id, "edit");
-      renderActiveView();
-    });
-  }
-
-  const updateLockCount = () => {
-    if (!lockInput || !lockCount) return;
-    if (lockInput.value.length > 60) {
-      lockInput.value = lockInput.value.slice(0, 60);
-    }
-    lockCount.textContent = `${lockInput.value.length}/60`;
-  };
-
-  if (editorVisible && lockInput) {
-    lockInput.value = lockNote;
-    updateLockCount();
-    lockInput.focus();
-    lockInput.setSelectionRange(lockInput.value.length, lockInput.value.length);
-  }
-
-  const handleSave = () => {
-    if (!tab || !lockInput) return;
-    const noteValue = normalizeLockNote(lockInput.value);
-    updateTabLockState(tab.id, { isLocked: true, lockNote: noteValue });
-    closeLockNoteEditor();
-    renderActiveView();
-  };
-
-  const handleSecondary = () => {
-    closeLockNoteEditor();
-    renderActiveView();
-  };
-
-  if (lockSave) {
-    lockSave.addEventListener("click", handleSave);
-  }
-  if (lockSecondary) {
-    lockSecondary.addEventListener("click", handleSecondary);
-  }
-  if (lockClear && tab) {
-    lockClear.addEventListener("click", () => {
-      updateTabLockState(tab.id, { isLocked: true, lockNote: "" });
-      closeLockNoteEditor();
-      renderActiveView();
-    });
-  }
-  if (lockInput && tab) {
-    lockInput.addEventListener("input", updateLockCount);
-    lockInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        handleSave();
-      }
-      if (event.key === "Escape") {
-        event.preventDefault();
-        handleSecondary();
-      }
-    });
-  }
-
-  if (editorVisible && lockPopover && tab) {
-    clearLockPopoverListeners();
-    lockPopoverListeners.outside = (event) => {
-      if (
-        lockPopover.contains(event.target) ||
-        lockToggle?.contains(event.target) ||
-        lockEdit?.contains(event.target)
-      ) {
-        return;
-      }
-      closeLockNoteEditor();
-      renderActiveView();
-    };
-    lockPopoverListeners.keydown = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeLockNoteEditor();
-        renderActiveView();
-      }
-    };
-    document.addEventListener("click", lockPopoverListeners.outside);
-    document.addEventListener("keydown", lockPopoverListeners.keydown);
+  
+  if (tab?.id && lockNoteEditorState.isOpen && lockNoteEditorState.tabId === tab.id && isLocked) {
+    const anchorElement =
+      lockPopoverAnchor === "lock-toggle"
+        ? lockToggle
+        : lockEdit || lockToggle;
+    showLockNotePopover(tab, anchorElement);
   }
     
   return panel;
@@ -1589,6 +1683,67 @@ const handleDocumentClick = (event) => {
   closeSearchOverlay();
 };
 
+const handleDocumentActionClick = (event) => {
+  const actionTarget = event.target.closest("[data-action]");
+  if (!actionTarget) return;
+  const action = actionTarget.dataset.action;
+
+  if (action === "edit-lock-note") {
+    event.preventDefault();
+    event.stopPropagation();
+    const tab = tabs.find((item) => item.id === activeTabId);
+    if (!tab || !tab.isLocked) return;
+    openLockNoteEditor(tab.id, "edit", "lock-edit");
+    showLockNotePopover(tab, actionTarget);
+    return;
+  }
+
+  if (action === "save-lock-note") {
+    event.preventDefault();
+    handleSaveLockNote();
+  }
+
+  if (action === "cancel-lock-note") {
+    event.preventDefault();
+    handleCancelLockNote();
+  }
+
+  if (action === "clear-lock-note") {
+    event.preventDefault();
+    handleClearLockNote();
+  }
+};
+
+const handleTooltipMouseOver = (event) => {
+  const target = event.target.closest("[data-tooltip]");
+  if (!target) return;
+  showTooltip(target);
+};
+
+const handleTooltipMouseOut = (event) => {
+  const target = event.target.closest("[data-tooltip]");
+  if (!target) return;
+  if (target.contains(event.relatedTarget)) return;
+  hideTooltip();
+};
+
+const handleTooltipFocusIn = (event) => {
+  const target = event.target.closest("[data-tooltip]");
+  if (!target) return;
+  showTooltip(target);
+};
+
+const handleTooltipFocusOut = (event) => {
+  const target = event.target.closest("[data-tooltip]");
+  if (!target) return;
+  if (target.contains(event.relatedTarget)) return;
+  hideTooltip();
+};
+
+const handleTooltipDismiss = () => {
+  hideTooltip();
+};
+
 const isEditableTarget = (target) => {
   if (!target) return false;
   if (target.isContentEditable) return true;
@@ -1692,4 +1847,11 @@ searchToggle?.addEventListener("click", () => {
   toggleSearchOverlay();
 });
 document.addEventListener("click", handleDocumentClick);
+document.addEventListener("click", handleDocumentActionClick);
 document.addEventListener("keydown", handleGlobalKeydown);
+document.addEventListener("mouseover", handleTooltipMouseOver);
+document.addEventListener("mouseout", handleTooltipMouseOut);
+document.addEventListener("focusin", handleTooltipFocusIn);
+document.addEventListener("focusout", handleTooltipFocusOut);
+window.addEventListener("scroll", handleTooltipDismiss, true);
+window.addEventListener("resize", handleTooltipDismiss);
