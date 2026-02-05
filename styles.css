@@ -856,7 +856,7 @@ span.search-result__name {
 .menu-list {
   list-style: none;
   display: grid;
-  gap: 4px;
+  gap: 0px;
 }
 
 .policy-group {
