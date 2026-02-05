@@ -1678,7 +1678,6 @@ span.search-result__name {
     align-items: stretch;
   align-content: stretch;
   min-height: 100%;
-  align-items: start;
 }
 
 .bento-card {
