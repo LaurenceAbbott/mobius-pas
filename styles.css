@@ -573,6 +573,7 @@ span.search-result__name {
   display: grid;
   gap: 16px;
   justify-items: center;
+  align-content: start;
 }
 
 .empty-state__title {
