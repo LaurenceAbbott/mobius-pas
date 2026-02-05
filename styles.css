@@ -656,7 +656,7 @@ span.search-result__name {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 24px;
+  padding: 16px;
   min-height: 120px;
   display: flex;
   align-items: center;
@@ -683,13 +683,13 @@ span.search-result__name {
   width: 100%;
   text-align: left;
   display: flex;
-  gap: 24px;
+  gap: 16px;
   flex-direction: column;
 }
 
 .menu-section {
   display: grid;
-  gap: 12px;
+  gap: 4px;
 }
 
 .menu-section[hidden] {
@@ -700,7 +700,7 @@ span.search-result__name {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--dark-gray);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .menu-divider {
