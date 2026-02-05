@@ -585,6 +585,7 @@ span.search-result__name {
 .empty-state__hint {
   font-size: 1rem;
   color: var(--mid-gray);
+  margin-bottom: 16px;
 }
 
 .empty-state__recent {
@@ -1676,7 +1677,6 @@ span.search-result__name {
   grid-template-columns: repeat(6, minmax(0, 1fr));
     align-items: stretch;
   align-content: stretch;
-  grid-auto-rows: minmax(0, 1fr);
   min-height: 100%;
   align-items: start;
 }
@@ -1692,7 +1692,6 @@ span.search-result__name {
   align-content: start;
   align-items: start;
   justify-items: start;
-  align-self: stretch;
 }
 
 .bento-card--wide {
