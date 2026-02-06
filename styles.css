@@ -1208,15 +1208,15 @@ span.search-result__name {
 }
 
 .detail-icon {
-  min-width: 38px;
-  min-height: 38px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 12px;
   background: var(--light-gray);
   color: var(--black);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .detail-text strong {
