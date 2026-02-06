@@ -1036,18 +1036,19 @@ span.search-result__name {
   gap: 16px;
   flex: 1 1 auto;
   min-width: 0;
+  flex-direction: column;
 }
 
 .customer-card__avatar {
-  min-width: 56px;
-  min-height: 56px;
-  border-radius: 16px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 12px;
   background: var(--light-gray);
   color: var(--black);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
+  font-size: 1rem;
 }
 
 .customer-card__identity-text {
@@ -1099,8 +1100,8 @@ span.search-result__name {
 
 .customer-card__actions-menu {
   position: absolute;
-  top: 24px;
-  right: 24px;
+  top: 16px;
+  right: 16px;
   flex: 0 0 auto;
 }
 
@@ -1108,7 +1109,7 @@ span.search-result__name {
   list-style: none;
   border: 1px solid var(--border);
   background: var(--white);
-  border-radius: 10px;
+  border-radius: 12px;
   width: 36px;
   height: 36px;
   display: inline-flex;
